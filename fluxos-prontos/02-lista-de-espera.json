@@ -1,0 +1,248 @@
+{
+  "formato": 1,
+  "fluxos": [
+    {
+      "name": "2 · Lista de espera do lançamento",
+      "descricao": "Transforma o comentário do post de aquecimento em lista de espera com e-mail, separa a lista por nível (iniciante, intermediário, avançado) e aquece até a abertura.",
+      "trigger": "comment",
+      "match_type": "contains",
+      "keywords": [
+        "lista",
+        "quero entrar",
+        "eu quero",
+        "espera"
+      ],
+      "public_replies": [
+        "Entrou na lista! Confere o direct 📩",
+        "Te chamei no privado 👀"
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 230
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! As vagas de [NOME DO PROGRAMA] abrem dia [DATA] 🚀\n\nQuem entra na lista de espera é avisado primeiro e leva [BÔNUS DE QUEM ENTRA HOJE]. Posso te colocar?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Quero entrar ✋"
+            },
+            {
+              "label": "Qual o valor?"
+            }
+          ],
+          "x": 360,
+          "y": 230
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "O investimento fica em torno de [FAIXA DE PREÇO], com [CONDIÇÃO DE PAGAMENTO]. O valor exato eu abro no dia [DATA].\n\nEntrar na lista não compromete nada — só garante o aviso e o bônus.",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Então entra ✅"
+            },
+            {
+              "label": "Agora não"
+            }
+          ],
+          "x": 660,
+          "y": 145
+        },
+        {
+          "id": "e1",
+          "kind": "ask_email",
+          "text": "Combinado! Me manda seu melhor e-mail — é para lá que vai o aviso da abertura 👇",
+          "x": 660,
+          "y": 315
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "lista-de-espera",
+          "x": 960,
+          "y": 145
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Prontinho, você está na lista ✅\n\nPara eu te mandar o conteúdo certo até lá: onde você está hoje?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Ainda não comecei"
+            },
+            {
+              "label": "Já comecei"
+            },
+            {
+              "label": "Já faço há tempo"
+            }
+          ],
+          "x": 1260,
+          "y": 145
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "nivel-iniciante",
+          "x": 1560,
+          "y": 60
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "nivel-intermediario",
+          "x": 1560,
+          "y": 230
+        },
+        {
+          "id": "t4",
+          "kind": "tag",
+          "tag": "nivel-avancado",
+          "x": 1560,
+          "y": 400
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "Perfeito, anotado 📝\n\nEnquanto a abertura não chega, começa por aqui:",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver o conteúdo",
+              "url": "https://exemplo.com/[CONTEUDO-GRATUITO]"
+            }
+          ],
+          "x": 1860,
+          "y": 230
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 1200,
+          "x": 2160,
+          "y": 230
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "{{first_name}}, está chegando a abertura de [NOME DO PROGRAMA] 👀\n\nDeixei aqui tudo o que você precisa saber antes de decidir:",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ler antes",
+              "url": "https://exemplo.com/[PAGINA-DE-ESPERA]"
+            }
+          ],
+          "x": 2460,
+          "y": 230
+        },
+        {
+          "id": "m8",
+          "kind": "message",
+          "text": "Tranquilo, {{first_name}} 🙂 Se mudar de ideia, é só me mandar “lista” por aqui.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 315
+        },
+        {
+          "id": "t8",
+          "kind": "tag",
+          "tag": "lista-recusou",
+          "x": 1260,
+          "y": 315
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "e1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "m2"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:0",
+          "to": "e1"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:1",
+          "to": "m8"
+        },
+        {
+          "from": "m8",
+          "handle": "next",
+          "to": "t8"
+        },
+        {
+          "from": "e1",
+          "handle": "next",
+          "to": "t1"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:0",
+          "to": "t2"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:1",
+          "to": "t3"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:2",
+          "to": "t4"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "t4",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "m4",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m5"
+        }
+      ]
+    }
+  ]
+}

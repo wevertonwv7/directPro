@@ -1,0 +1,261 @@
+{
+  "formato": 1,
+  "fluxos": [
+    {
+      "name": "7 · Agendamento de avaliação",
+      "descricao": "Pergunta o período preferido, pede o follow, manda a agenda e confere 2 horas depois se a pessoa marcou. Quem não achou horário cai numa lista de encaixe.",
+      "trigger": "comment",
+      "match_type": "contains",
+      "keywords": [
+        "agendar",
+        "avaliação",
+        "avaliacao",
+        "horário",
+        "horario",
+        "quero"
+      ],
+      "public_replies": [
+        "Te chamei no direct para marcar 📅",
+        "Já estou no seu privado ✅"
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 230
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! Vamos marcar a sua [AVALIAÇÃO / SESSÃO] 📅\n\nSão [DURAÇÃO] em [ENDEREÇO OU ONLINE], sem compromisso. Qual período funciona melhor pra você?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Manhã ☀️"
+            },
+            {
+              "label": "Tarde 🌤️"
+            },
+            {
+              "label": "Noite 🌙"
+            }
+          ],
+          "x": 360,
+          "y": 230
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "prefere-manha",
+          "x": 660,
+          "y": 60
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "prefere-tarde",
+          "x": 660,
+          "y": 230
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "prefere-noite",
+          "x": 660,
+          "y": 400
+        },
+        {
+          "id": "g1",
+          "kind": "follow_gate",
+          "text": "Perfeito! Me segue aqui para eu conseguir te mandar a confirmação e os lembretes por este chat 👇",
+          "buttonLabel": "Já sigo ✅",
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Fechado! Escolhe o horário que ficar melhor pra você 👇",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver horários",
+              "url": "https://exemplo.com/[SUA-AGENDA]"
+            }
+          ],
+          "x": 1260,
+          "y": 230
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 120,
+          "x": 1560,
+          "y": 230
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "{{first_name}}, conseguiu escolher o horário?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Marquei ✅"
+            },
+            {
+              "label": "Não achei horário"
+            },
+            {
+              "label": "Mudei de ideia"
+            }
+          ],
+          "x": 1860,
+          "y": 230
+        },
+        {
+          "id": "t4",
+          "kind": "tag",
+          "tag": "agendou",
+          "x": 2160,
+          "y": 60
+        },
+        {
+          "id": "e1",
+          "kind": "ask_email",
+          "text": "Show! Me manda seu e-mail que eu envio a confirmação e o lembrete por lá também 👇",
+          "x": 2460,
+          "y": 60
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "Confirmado, {{first_name}}! Te espero 🙌\n\nSe precisar remarcar, é só me avisar por aqui — sem problema nenhum.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2760,
+          "y": 230
+        },
+        {
+          "id": "t5",
+          "kind": "tag",
+          "tag": "sem-horario",
+          "x": 2160,
+          "y": 230
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "Me diz dois dias e horários que funcionam pra você que eu abro um encaixe 🙏",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2460,
+          "y": 230
+        },
+        {
+          "id": "t6",
+          "kind": "tag",
+          "tag": "desistiu",
+          "x": 2160,
+          "y": 400
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "Sem problema 🙂 O convite fica de pé — é só mandar “agendar” aqui quando fizer sentido.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2460,
+          "y": 400
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "t1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "t2"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:2",
+          "to": "t3"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "g1"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "g1"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "g1"
+        },
+        {
+          "from": "g1",
+          "handle": "next",
+          "to": "m2"
+        },
+        {
+          "from": "m2",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:0",
+          "to": "t4"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:1",
+          "to": "t5"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:2",
+          "to": "t6"
+        },
+        {
+          "from": "t4",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "e1",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "t5",
+          "handle": "next",
+          "to": "m5"
+        },
+        {
+          "from": "t6",
+          "handle": "next",
+          "to": "m6"
+        }
+      ]
+    }
+  ]
+}

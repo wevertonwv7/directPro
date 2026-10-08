@@ -1,0 +1,163 @@
+{
+  "formato": 1,
+  "fluxos": [
+    {
+      "name": "9 · Atendimento 24h da loja",
+      "descricao": "Responde na hora as três perguntas que mais chegam no direct de loja: cadê meu pedido, como troco e qual o prazo. Quem quer gente é etiquetado e some da fila automática.",
+      "trigger": "dm",
+      "match_type": "any",
+      "keywords": [],
+      "public_replies": [],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 315
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! 👋 Sou o atendimento de [SUA LOJA] e respondo na hora, a qualquer horário.\n\nSobre o que você precisa?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Meu pedido 📦"
+            },
+            {
+              "label": "Trocas e prazos"
+            },
+            {
+              "label": "Falar com pessoa"
+            }
+          ],
+          "x": 360,
+          "y": 315
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Para acompanhar seu pedido, é só entrar com o número que veio no e-mail de confirmação 👇\n\nSe já passou de [PRAZO] sem atualizar, me chama aqui que eu verifico pra você.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Rastrear pedido",
+              "url": "https://exemplo.com/[RASTREIO]"
+            }
+          ],
+          "x": 660,
+          "y": 145
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Claro! O que você quer saber?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Prazo de entrega"
+            },
+            {
+              "label": "Como trocar"
+            },
+            {
+              "label": "Formas de pagar"
+            }
+          ],
+          "x": 660,
+          "y": 315
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "📦 Prazo de entrega\n\n[REGIÃO 1]: [X] dias úteis\n[REGIÃO 2]: [Y] dias úteis\n\nO envio sai em até [Z] dias úteis depois de o pagamento ser confirmado.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 60
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "🔁 Trocas e devoluções\n\nVocê tem [X] dias corridos depois de receber. O produto precisa estar [CONDIÇÃO]. A primeira troca é [GRÁTIS OU COM CUSTO].",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Abrir uma troca",
+              "url": "https://exemplo.com/[TROCAS]"
+            }
+          ],
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "💳 Formas de pagamento\n\nPix (com [X]% de desconto), cartão em até [X]x e boleto.\n\nNo Pix o envio é liberado na hora que o pagamento cai.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 400
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "atendimento-humano",
+          "x": 660,
+          "y": 485
+        },
+        {
+          "id": "m7",
+          "kind": "message",
+          "text": "Já chamei alguém da equipe 🙋\n\nEscreve aqui o que você precisa (com o número do pedido, se tiver) que a gente responde em até [PRAZO], no horário [HORÁRIO DE ATENDIMENTO].",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 570
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "m2"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "m3"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:2",
+          "to": "t1"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:0",
+          "to": "m4"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:1",
+          "to": "m5"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:2",
+          "to": "m6"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m7"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,266 @@
+{
+  "formato": 1,
+  "fluxos": [
+    {
+      "name": "3 · Cupom de primeira compra",
+      "descricao": "Entrega o cupom no direct depois do follow, cobra o uso 3 horas depois e faz a última chamada antes de vencer. Separa quem comprou, quem travou e quem sumiu.",
+      "trigger": "comment",
+      "match_type": "contains",
+      "keywords": [
+        "cupom",
+        "desconto",
+        "quero"
+      ],
+      "public_replies": [
+        "Cupom no seu direct 🎟️",
+        "Te mandei no privado ✅"
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 230
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! Tenho um cupom de [X]% para a primeira compra 🎟️\n\nQuer que eu libere pra você?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Quero o cupom 🎟️"
+            },
+            {
+              "label": "Como funciona?"
+            }
+          ],
+          "x": 360,
+          "y": 230
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Simples: o cupom dá [X]% em [O QUE VALE], vale por [PRAZO] e só na primeira compra. Não acumula com outras promoções.\n\nLibero pra você?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Libera sim ✅"
+            },
+            {
+              "label": "Depois eu vejo"
+            }
+          ],
+          "x": 660,
+          "y": 145
+        },
+        {
+          "id": "g1",
+          "kind": "follow_gate",
+          "text": "Fechado! Me segue aqui para eu conseguir te mandar — e para você ver as promoções antes de todo mundo 👇",
+          "buttonLabel": "Já sigo ✅",
+          "x": 660,
+          "y": 315
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "cupom-enviado",
+          "x": 960,
+          "y": 145
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Seu cupom é [CÓDIGO] 🎟️\n\n[X]% de desconto, válido até [DATA]. É só aplicar no carrinho:",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Usar agora",
+              "url": "https://exemplo.com/[SUA-LOJA]"
+            }
+          ],
+          "x": 1260,
+          "y": 145
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 180,
+          "x": 1560,
+          "y": 230
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "{{first_name}}, conseguiu usar o cupom [CÓDIGO]?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Comprei! 🛍️"
+            },
+            {
+              "label": "Deu erro 😕"
+            },
+            {
+              "label": "Ainda tô vendo"
+            }
+          ],
+          "x": 1860,
+          "y": 230
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "comprou",
+          "x": 2160,
+          "y": 60
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "Obaaa! Obrigado pela confiança 🧡\n\nQualquer coisa sobre a entrega, é só me chamar por aqui.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2460,
+          "y": 60
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "erro-no-cupom",
+          "x": 2160,
+          "y": 230
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "Me conta o que apareceu na tela que eu resolvo pra você 🙏 (pode mandar print)",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2460,
+          "y": 230
+        },
+        {
+          "id": "d2",
+          "kind": "delay",
+          "minutes": 1200,
+          "x": 2160,
+          "y": 400
+        },
+        {
+          "id": "m8",
+          "kind": "message",
+          "text": "Último aviso, {{first_name}} 😊 O cupom [CÓDIGO] vence [DATA]:",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Usar o cupom",
+              "url": "https://exemplo.com/[SUA-LOJA]"
+            }
+          ],
+          "x": 2460,
+          "y": 400
+        },
+        {
+          "id": "m7",
+          "kind": "message",
+          "text": "Sem problema! Quando quiser, é só mandar “cupom” aqui 😉",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 315
+        },
+        {
+          "id": "t7",
+          "kind": "tag",
+          "tag": "cupom-recusou",
+          "x": 1260,
+          "y": 315
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "g1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "m2"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:0",
+          "to": "g1"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:1",
+          "to": "m7"
+        },
+        {
+          "from": "m7",
+          "handle": "next",
+          "to": "t7"
+        },
+        {
+          "from": "g1",
+          "handle": "next",
+          "to": "t1"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m3",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:0",
+          "to": "t2"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:1",
+          "to": "t3"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:2",
+          "to": "d2"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "m5"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "m6"
+        },
+        {
+          "from": "d2",
+          "handle": "next",
+          "to": "m8"
+        }
+      ]
+    }
+  ]
+}

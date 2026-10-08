@@ -1,0 +1,249 @@
+{
+  "formato": 1,
+  "fluxos": [
+    {
+      "name": "8 · Aula ao vivo com lembrete",
+      "descricao": "Inscreve no comentário, guarda o e-mail, manda o link da sala e volta 20 horas depois para confirmar presença — com o “estamos começando” uma hora antes de entrar.",
+      "trigger": "comment",
+      "match_type": "contains",
+      "keywords": [
+        "aula",
+        "quero participar",
+        "eu quero",
+        "live"
+      ],
+      "public_replies": [
+        "Te mandei o link no direct 📩",
+        "Já foi para o seu privado ✅"
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 145
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! A aula [NOME DA AULA] é dia [DATA], às [HORA] 🎥\n\nÉ gratuita e ao vivo. Quer que eu te mande o link e o lembrete?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Quero sim 🙌"
+            },
+            {
+              "label": "Sobre o que é?"
+            }
+          ],
+          "x": 360,
+          "y": 145
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Na aula eu mostro [PONTO 1], [PONTO 2] e [PONTO 3] — em [DURAÇÃO], direto ao ponto, com espaço para perguntas no fim.\n\nTe garanto uma vaga?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Garante sim ✅"
+            },
+            {
+              "label": "Fica pra próxima"
+            }
+          ],
+          "x": 660,
+          "y": 60
+        },
+        {
+          "id": "e1",
+          "kind": "ask_email",
+          "text": "Perfeito! Me manda seu melhor e-mail que a inscrição vai para lá 👇",
+          "x": 660,
+          "y": 230
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "inscrito-na-aula",
+          "x": 960,
+          "y": 60
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Inscrição confirmada ✅\n\nSalva o link da sala — é o mesmo no dia da aula:",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Salvar o link",
+              "url": "https://exemplo.com/[LINK-DA-SALA]"
+            }
+          ],
+          "x": 1260,
+          "y": 60
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 1200,
+          "x": 1560,
+          "y": 145
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "{{first_name}}, a aula [NOME DA AULA] é [HOJE OU AMANHÃ] às [HORA] ⏰\n\nVocê vem?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Tô dentro 🔥"
+            },
+            {
+              "label": "Não vou conseguir"
+            }
+          ],
+          "x": 1860,
+          "y": 145
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "confirmou-presenca",
+          "x": 2160,
+          "y": 60
+        },
+        {
+          "id": "d2",
+          "kind": "delay",
+          "minutes": 60,
+          "x": 2460,
+          "y": 60
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "Começando em instantes, {{first_name}}! Entra por aqui 👇",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Entrar na sala",
+              "url": "https://exemplo.com/[LINK-DA-SALA]"
+            }
+          ],
+          "x": 2760,
+          "y": 145
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "nao-vai-a-aula",
+          "x": 2160,
+          "y": 230
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "Sem problema! Eu deixo a gravação disponível por [PRAZO] e te mando o link por aqui 🙌",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2460,
+          "y": 230
+        },
+        {
+          "id": "m8",
+          "kind": "message",
+          "text": "Combinado! Eu te aviso quando tiver a próxima 😉",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "t8",
+          "kind": "tag",
+          "tag": "aula-recusou",
+          "x": 1260,
+          "y": 230
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "e1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "m2"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:0",
+          "to": "e1"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:1",
+          "to": "m8"
+        },
+        {
+          "from": "m8",
+          "handle": "next",
+          "to": "t8"
+        },
+        {
+          "from": "e1",
+          "handle": "next",
+          "to": "t1"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m3",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:0",
+          "to": "t2"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:1",
+          "to": "t3"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "d2"
+        },
+        {
+          "from": "d2",
+          "handle": "next",
+          "to": "m5"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "m6"
+        }
+      ]
+    }
+  ]
+}

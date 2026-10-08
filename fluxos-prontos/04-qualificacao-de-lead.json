@@ -1,0 +1,337 @@
+{
+  "formato": 1,
+  "fluxos": [
+    {
+      "name": "4 · Qualificação de lead (serviço)",
+      "descricao": "Três perguntas no direct que separam o que a pessoa precisa, para quando precisa e o e-mail dela — e terminam no link da sua agenda. Cada resposta vira etiqueta em Contatos.",
+      "trigger": "dm",
+      "match_type": "contains",
+      "keywords": [
+        "orçamento",
+        "orcamento",
+        "proposta",
+        "quero contratar",
+        "valores"
+      ],
+      "public_replies": [],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 315
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! Aqui é o atendimento de [SEU NEGÓCIO] 👋\n\nPara eu te passar um orçamento certo (e não um chute), me responde 3 coisinhas rápidas. Vamos?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Vamos lá 👍"
+            },
+            {
+              "label": "Só uma dúvida"
+            }
+          ],
+          "x": 360,
+          "y": 315
+        },
+        {
+          "id": "m9",
+          "kind": "message",
+          "text": "Pode perguntar! Mas se preferir, me diz o que você precisa que eu já te respondo com valor.",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Ok, vamos lá 👍"
+            },
+            {
+              "label": "Falar com pessoa"
+            }
+          ],
+          "x": 660,
+          "y": 230
+        },
+        {
+          "id": "t9",
+          "kind": "tag",
+          "tag": "quer-atendimento-humano",
+          "x": 960,
+          "y": 60
+        },
+        {
+          "id": "m10",
+          "kind": "message",
+          "text": "Já te chamei aqui, {{first_name}} 🙌\n\nMe deixa um resumo do que você precisa que eu respondo pessoalmente em até [PRAZO].",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 1260,
+          "y": 230
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "1 de 3 — O que você precisa?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "[SERVIÇO 1]"
+            },
+            {
+              "label": "[SERVIÇO 2]"
+            },
+            {
+              "label": "Outra coisa"
+            }
+          ],
+          "x": 660,
+          "y": 400
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "servico-1",
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "servico-2",
+          "x": 960,
+          "y": 400
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "servico-outro",
+          "x": 960,
+          "y": 570
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "2 de 3 — Para quando você precisa?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Essa semana 🔥"
+            },
+            {
+              "label": "Neste mês"
+            },
+            {
+              "label": "Só pesquisando"
+            }
+          ],
+          "x": 1260,
+          "y": 400
+        },
+        {
+          "id": "t4",
+          "kind": "tag",
+          "tag": "prazo-urgente",
+          "x": 1560,
+          "y": 145
+        },
+        {
+          "id": "t5",
+          "kind": "tag",
+          "tag": "prazo-do-mes",
+          "x": 1560,
+          "y": 315
+        },
+        {
+          "id": "t6",
+          "kind": "tag",
+          "tag": "so-pesquisando",
+          "x": 1560,
+          "y": 485
+        },
+        {
+          "id": "e1",
+          "kind": "ask_email",
+          "text": "3 de 3 — Me manda seu melhor e-mail que eu envio a proposta por lá também 👇",
+          "x": 1860,
+          "y": 315
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "Perfeito, {{first_name}}! Já tenho o que preciso ✅\n\nO próximo passo é uma conversa de [DURAÇÃO], sem compromisso, para eu entender seu caso e te passar o valor fechado.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Escolher horário",
+              "url": "https://exemplo.com/[SUA-AGENDA]"
+            }
+          ],
+          "x": 2160,
+          "y": 315
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 1200,
+          "x": 2460,
+          "y": 315
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "{{first_name}}, conseguiu marcar o horário?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Marquei ✅"
+            },
+            {
+              "label": "Ainda não"
+            }
+          ],
+          "x": 2760,
+          "y": 315
+        },
+        {
+          "id": "t7",
+          "kind": "tag",
+          "tag": "agendou",
+          "x": 3060,
+          "y": 230
+        },
+        {
+          "id": "m7",
+          "kind": "message",
+          "text": "Sem stress! A agenda continua aberta aqui 👇",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver horários",
+              "url": "https://exemplo.com/[SUA-AGENDA]"
+            }
+          ],
+          "x": 3060,
+          "y": 400
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "m2"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "m9"
+        },
+        {
+          "from": "m9",
+          "handle": "btn:0",
+          "to": "m2"
+        },
+        {
+          "from": "m9",
+          "handle": "btn:1",
+          "to": "t9"
+        },
+        {
+          "from": "t9",
+          "handle": "next",
+          "to": "m10"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:0",
+          "to": "t1"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:1",
+          "to": "t2"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:2",
+          "to": "t3"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:0",
+          "to": "t4"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:1",
+          "to": "t5"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:2",
+          "to": "t6"
+        },
+        {
+          "from": "t4",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "t5",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "t6",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "e1",
+          "handle": "next",
+          "to": "m5"
+        },
+        {
+          "from": "m5",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m6"
+        },
+        {
+          "from": "m6",
+          "handle": "btn:0",
+          "to": "t7"
+        },
+        {
+          "from": "m6",
+          "handle": "btn:1",
+          "to": "m7"
+        }
+      ]
+    }
+  ]
+}

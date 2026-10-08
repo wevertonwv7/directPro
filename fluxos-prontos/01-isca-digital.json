@@ -1,0 +1,256 @@
+{
+  "formato": 1,
+  "fluxos": [
+    {
+      "name": "1 · Isca digital no comentário",
+      "descricao": "Quem comenta a palavra-chave recebe o material no direct. Pede o follow antes de entregar, guarda o e-mail e volta no dia seguinte para saber se a pessoa usou.",
+      "trigger": "comment",
+      "match_type": "contains",
+      "keywords": [
+        "quero",
+        "eu quero",
+        "link",
+        "enviar"
+      ],
+      "public_replies": [
+        "Te mandei no direct 📩",
+        "Já está no seu direct, dá uma olhada 👀",
+        "Enviado! Confere lá no privado ✅"
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 145
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name|tudo bem}}! Vi seu comentário 👀\n\nEu preparei o [NOME DO MATERIAL] e posso te mandar agora mesmo. Quer receber?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Quero sim 🙌"
+            },
+            {
+              "label": "Me conta mais"
+            }
+          ],
+          "x": 360,
+          "y": 145
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Claro! O [NOME DO MATERIAL] é um passo a passo de [O QUE ELE RESOLVE], em [FORMATO: PDF, vídeo ou planilha].\n\nEm [TEMPO] você já consegue [RESULTADO]. Quer que eu mande?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Agora quero 👍"
+            },
+            {
+              "label": "Fica pra depois"
+            }
+          ],
+          "x": 660,
+          "y": 60
+        },
+        {
+          "id": "g1",
+          "kind": "follow_gate",
+          "text": "Perfeito! Só uma coisa antes: me segue aqui para não perder os próximos materiais 👇\n\nDepois é só tocar no botão.",
+          "buttonLabel": "Já sigo ✅",
+          "x": 660,
+          "y": 230
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "lead",
+          "x": 960,
+          "y": 60
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Aqui está, {{first_name}} 🎁\n\n[NOME DO MATERIAL] — é só tocar no botão abaixo.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Baixar agora",
+              "url": "https://exemplo.com/[SEU-LINK]"
+            }
+          ],
+          "x": 1260,
+          "y": 60
+        },
+        {
+          "id": "e1",
+          "kind": "ask_email",
+          "text": "Mais uma coisa rápida: me manda seu melhor e-mail que eu te aviso quando sair [A PRÓXIMA COISA] 👇\n\n(é só escrever aqui e enviar)",
+          "x": 1560,
+          "y": 145
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "e-mail-capturado",
+          "x": 1860,
+          "y": 145
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 1200,
+          "x": 2160,
+          "y": 145
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "{{first_name}}, conseguiu abrir o [NOME DO MATERIAL]?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Sim, curti 🔥"
+            },
+            {
+              "label": "Ainda não 😅"
+            }
+          ],
+          "x": 2460,
+          "y": 145
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "Que bom! 🙌\n\nSe quiser o passo seguinte, é [NOME DA SUA OFERTA] — é onde eu mostro [O QUE A OFERTA ENTREGA].",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Quero ver",
+              "url": "https://exemplo.com/[SUA-OFERTA]"
+            }
+          ],
+          "x": 2760,
+          "y": 60
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "engajado",
+          "x": 3060,
+          "y": 145
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "Sem stress, o link continua valendo 👇",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Abrir de novo",
+              "url": "https://exemplo.com/[SEU-LINK]"
+            }
+          ],
+          "x": 2760,
+          "y": 230
+        },
+        {
+          "id": "m9",
+          "kind": "message",
+          "text": "Sem problema, {{first_name}} 🙂 Fica guardado aqui — é só me mandar “quero” quando bater a vontade.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "t9",
+          "kind": "tag",
+          "tag": "morno",
+          "x": 1260,
+          "y": 230
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "g1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "m2"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:0",
+          "to": "g1"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:1",
+          "to": "m9"
+        },
+        {
+          "from": "m9",
+          "handle": "next",
+          "to": "t9"
+        },
+        {
+          "from": "g1",
+          "handle": "next",
+          "to": "t1"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m3",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "e1",
+          "handle": "next",
+          "to": "t2"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:0",
+          "to": "m5"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:1",
+          "to": "m6"
+        },
+        {
+          "from": "m5",
+          "handle": "next",
+          "to": "t3"
+        }
+      ]
+    }
+  ]
+}

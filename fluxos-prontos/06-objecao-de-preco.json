@@ -1,0 +1,213 @@
+{
+  "formato": 1,
+  "fluxos": [
+    {
+      "name": "6 · Quem pergunta o preço",
+      "descricao": "Responde “quanto custa” com o valor na hora e três saídas: ver por dentro, ver um plano mais leve ou fechar. Etiqueta quem falou que está caro, para você trabalhar essa lista depois.",
+      "trigger": "dm",
+      "match_type": "contains",
+      "keywords": [
+        "preço",
+        "preco",
+        "valor",
+        "quanto custa",
+        "quanto é",
+        "quanto e"
+      ],
+      "public_replies": [],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 230
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! Boa pergunta 👇\n\n[NOME DO PRODUTO] custa [PREÇO] — ou [CONDIÇÃO PARCELADA]. Nele vai [O QUE ESTÁ INCLUÍDO].\n\nO que faz mais sentido pra você agora?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Ver por dentro 👀"
+            },
+            {
+              "label": "Está caro pra mim"
+            },
+            {
+              "label": "Quero fechar 🤝"
+            }
+          ],
+          "x": 360,
+          "y": 230
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Deixei a página com tudo destrinchado: o que entra, quanto tempo leva e o que dizem as pessoas que já fizeram.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver a página",
+              "url": "https://exemplo.com/[SUA-PAGINA]"
+            }
+          ],
+          "x": 660,
+          "y": 60
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "viu-a-pagina",
+          "x": 960,
+          "y": 60
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 1200,
+          "x": 1260,
+          "y": 230
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "{{first_name}}, conseguiu dar uma olhada? Ficou alguma dúvida?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Ficou uma dúvida"
+            },
+            {
+              "label": "Tudo claro 👍"
+            }
+          ],
+          "x": 1560,
+          "y": 230
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "Manda aqui que eu te respondo 🙂",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 1860,
+          "y": 145
+        },
+        {
+          "id": "m7",
+          "kind": "message",
+          "text": "Então é só isso 👇",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Começar agora",
+              "url": "https://exemplo.com/[CHECKOUT]"
+            }
+          ],
+          "x": 1860,
+          "y": 315
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "objecao-preco",
+          "x": 660,
+          "y": 230
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Entendo, {{first_name}} 🙂\n\nDuas saídas: dá para parcelar em [X]x de [VALOR], e existe [PLANO MENOR] por [PREÇO MENOR], que já resolve [O PROBLEMA PRINCIPAL].",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver o plano menor",
+              "url": "https://exemplo.com/[PLANO-MENOR]"
+            }
+          ],
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "quer-fechar",
+          "x": 660,
+          "y": 400
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "Perfeito! É por aqui 👇\n\nSe travar alguma coisa no pagamento, me chama nesta mesma conversa que eu resolvo.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Finalizar compra",
+              "url": "https://exemplo.com/[CHECKOUT]"
+            }
+          ],
+          "x": 960,
+          "y": 400
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "m2"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "t2"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:2",
+          "to": "t3"
+        },
+        {
+          "from": "m2",
+          "handle": "next",
+          "to": "t1"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m5"
+        },
+        {
+          "from": "m5",
+          "handle": "btn:0",
+          "to": "m6"
+        },
+        {
+          "from": "m5",
+          "handle": "btn:1",
+          "to": "m7"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "m4"
+        }
+      ]
+    }
+  ]
+}

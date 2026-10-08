@@ -1,0 +1,283 @@
+{
+  "formato": 1,
+  "fluxos": [
+    {
+      "name": "10 · Quiz de 2 perguntas",
+      "descricao": "Duas perguntas, quatro perfis e uma recomendação diferente para cada um. A pessoa sai etiquetada, com e-mail e com o conteúdo certo na mão — e você sai com a lista separada.",
+      "trigger": "comment",
+      "match_type": "contains",
+      "keywords": [
+        "quiz",
+        "teste",
+        "descobrir",
+        "eu quero"
+      ],
+      "public_replies": [
+        "Te mandei o quiz no direct 🧩",
+        "Começou! Confere o privado 👀"
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 315
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! Duas perguntas rápidas e eu te digo qual [CAMINHO OU PLANO] combina com você 🧩\n\nPergunta 1: onde você está hoje?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Começando do zero"
+            },
+            {
+              "label": "Já tenho algo"
+            }
+          ],
+          "x": 360,
+          "y": 315
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "perfil-iniciante",
+          "x": 660,
+          "y": 230
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "perfil-avancado",
+          "x": 660,
+          "y": 400
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Ótimo, todo mundo começa aí 🌱\n\nPergunta 2: o que mais te trava hoje?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Falta de tempo ⏳"
+            },
+            {
+              "label": "Não sei por onde"
+            }
+          ],
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Boa, então dá para acelerar 🚀\n\nPergunta 2: o que mais te trava agora?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Poucos clientes"
+            },
+            {
+              "label": "Falta de processo"
+            }
+          ],
+          "x": 960,
+          "y": 400
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "trava-tempo",
+          "x": 1260,
+          "y": 60
+        },
+        {
+          "id": "t4",
+          "kind": "tag",
+          "tag": "trava-direcao",
+          "x": 1260,
+          "y": 230
+        },
+        {
+          "id": "t5",
+          "kind": "tag",
+          "tag": "trava-clientes",
+          "x": 1260,
+          "y": 400
+        },
+        {
+          "id": "t6",
+          "kind": "tag",
+          "tag": "trava-processo",
+          "x": 1260,
+          "y": 570
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "Seu perfil: começando com pouco tempo ⏳\n\nO caminho mais curto pra você é [RECOMENDAÇÃO 1], porque [MOTIVO EM UMA FRASE].",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver o caminho",
+              "url": "https://exemplo.com/[RECOMENDACAO-1]"
+            }
+          ],
+          "x": 1560,
+          "y": 60
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "Seu perfil: começando sem direção 🧭\n\nComeça por [RECOMENDAÇÃO 2] — é o que organiza tudo antes de você gastar energia à toa.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver o caminho",
+              "url": "https://exemplo.com/[RECOMENDACAO-2]"
+            }
+          ],
+          "x": 1560,
+          "y": 230
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "Seu perfil: rodando, mas sem clientes 📣\n\nSua prioridade é [RECOMENDAÇÃO 3]: [MOTIVO EM UMA FRASE].",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver o caminho",
+              "url": "https://exemplo.com/[RECOMENDACAO-3]"
+            }
+          ],
+          "x": 1560,
+          "y": 400
+        },
+        {
+          "id": "m7",
+          "kind": "message",
+          "text": "Seu perfil: rodando, mas no sufoco 🧯\n\nAntes de vender mais, arruma [RECOMENDAÇÃO 4] — senão o volume novo vira problema.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver o caminho",
+              "url": "https://exemplo.com/[RECOMENDACAO-4]"
+            }
+          ],
+          "x": 1560,
+          "y": 570
+        },
+        {
+          "id": "e1",
+          "kind": "ask_email",
+          "text": "Quer o resultado completo por e-mail também, com o passo a passo? Manda seu melhor e-mail 👇",
+          "x": 1860,
+          "y": 315
+        },
+        {
+          "id": "m8",
+          "kind": "message",
+          "text": "Enviado 📩\n\nE se quiser conversar sobre o seu caso, é só me responder aqui — eu leio tudo.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2160,
+          "y": 315
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "t1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "t2"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m2"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:0",
+          "to": "t3"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:1",
+          "to": "t4"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:0",
+          "to": "t5"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:1",
+          "to": "t6"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "t4",
+          "handle": "next",
+          "to": "m5"
+        },
+        {
+          "from": "t5",
+          "handle": "next",
+          "to": "m6"
+        },
+        {
+          "from": "t6",
+          "handle": "next",
+          "to": "m7"
+        },
+        {
+          "from": "m4",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "m5",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "m6",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "m7",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "e1",
+          "handle": "next",
+          "to": "m8"
+        }
+      ]
+    }
+  ]
+}

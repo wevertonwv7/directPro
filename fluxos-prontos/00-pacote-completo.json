@@ -1,0 +1,2449 @@
+{
+  "formato": 1,
+  "fluxos": [
+    {
+      "name": "1 · Isca digital no comentário",
+      "descricao": "Quem comenta a palavra-chave recebe o material no direct. Pede o follow antes de entregar, guarda o e-mail e volta no dia seguinte para saber se a pessoa usou.",
+      "trigger": "comment",
+      "match_type": "contains",
+      "keywords": [
+        "quero",
+        "eu quero",
+        "link",
+        "enviar"
+      ],
+      "public_replies": [
+        "Te mandei no direct 📩",
+        "Já está no seu direct, dá uma olhada 👀",
+        "Enviado! Confere lá no privado ✅"
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 145
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name|tudo bem}}! Vi seu comentário 👀\n\nEu preparei o [NOME DO MATERIAL] e posso te mandar agora mesmo. Quer receber?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Quero sim 🙌"
+            },
+            {
+              "label": "Me conta mais"
+            }
+          ],
+          "x": 360,
+          "y": 145
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Claro! O [NOME DO MATERIAL] é um passo a passo de [O QUE ELE RESOLVE], em [FORMATO: PDF, vídeo ou planilha].\n\nEm [TEMPO] você já consegue [RESULTADO]. Quer que eu mande?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Agora quero 👍"
+            },
+            {
+              "label": "Fica pra depois"
+            }
+          ],
+          "x": 660,
+          "y": 60
+        },
+        {
+          "id": "g1",
+          "kind": "follow_gate",
+          "text": "Perfeito! Só uma coisa antes: me segue aqui para não perder os próximos materiais 👇\n\nDepois é só tocar no botão.",
+          "buttonLabel": "Já sigo ✅",
+          "x": 660,
+          "y": 230
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "lead",
+          "x": 960,
+          "y": 60
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Aqui está, {{first_name}} 🎁\n\n[NOME DO MATERIAL] — é só tocar no botão abaixo.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Baixar agora",
+              "url": "https://exemplo.com/[SEU-LINK]"
+            }
+          ],
+          "x": 1260,
+          "y": 60
+        },
+        {
+          "id": "e1",
+          "kind": "ask_email",
+          "text": "Mais uma coisa rápida: me manda seu melhor e-mail que eu te aviso quando sair [A PRÓXIMA COISA] 👇\n\n(é só escrever aqui e enviar)",
+          "x": 1560,
+          "y": 145
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "e-mail-capturado",
+          "x": 1860,
+          "y": 145
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 1200,
+          "x": 2160,
+          "y": 145
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "{{first_name}}, conseguiu abrir o [NOME DO MATERIAL]?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Sim, curti 🔥"
+            },
+            {
+              "label": "Ainda não 😅"
+            }
+          ],
+          "x": 2460,
+          "y": 145
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "Que bom! 🙌\n\nSe quiser o passo seguinte, é [NOME DA SUA OFERTA] — é onde eu mostro [O QUE A OFERTA ENTREGA].",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Quero ver",
+              "url": "https://exemplo.com/[SUA-OFERTA]"
+            }
+          ],
+          "x": 2760,
+          "y": 60
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "engajado",
+          "x": 3060,
+          "y": 145
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "Sem stress, o link continua valendo 👇",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Abrir de novo",
+              "url": "https://exemplo.com/[SEU-LINK]"
+            }
+          ],
+          "x": 2760,
+          "y": 230
+        },
+        {
+          "id": "m9",
+          "kind": "message",
+          "text": "Sem problema, {{first_name}} 🙂 Fica guardado aqui — é só me mandar “quero” quando bater a vontade.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "t9",
+          "kind": "tag",
+          "tag": "morno",
+          "x": 1260,
+          "y": 230
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "g1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "m2"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:0",
+          "to": "g1"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:1",
+          "to": "m9"
+        },
+        {
+          "from": "m9",
+          "handle": "next",
+          "to": "t9"
+        },
+        {
+          "from": "g1",
+          "handle": "next",
+          "to": "t1"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m3",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "e1",
+          "handle": "next",
+          "to": "t2"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:0",
+          "to": "m5"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:1",
+          "to": "m6"
+        },
+        {
+          "from": "m5",
+          "handle": "next",
+          "to": "t3"
+        }
+      ]
+    },
+    {
+      "name": "2 · Lista de espera do lançamento",
+      "descricao": "Transforma o comentário do post de aquecimento em lista de espera com e-mail, separa a lista por nível (iniciante, intermediário, avançado) e aquece até a abertura.",
+      "trigger": "comment",
+      "match_type": "contains",
+      "keywords": [
+        "lista",
+        "quero entrar",
+        "eu quero",
+        "espera"
+      ],
+      "public_replies": [
+        "Entrou na lista! Confere o direct 📩",
+        "Te chamei no privado 👀"
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 230
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! As vagas de [NOME DO PROGRAMA] abrem dia [DATA] 🚀\n\nQuem entra na lista de espera é avisado primeiro e leva [BÔNUS DE QUEM ENTRA HOJE]. Posso te colocar?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Quero entrar ✋"
+            },
+            {
+              "label": "Qual o valor?"
+            }
+          ],
+          "x": 360,
+          "y": 230
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "O investimento fica em torno de [FAIXA DE PREÇO], com [CONDIÇÃO DE PAGAMENTO]. O valor exato eu abro no dia [DATA].\n\nEntrar na lista não compromete nada — só garante o aviso e o bônus.",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Então entra ✅"
+            },
+            {
+              "label": "Agora não"
+            }
+          ],
+          "x": 660,
+          "y": 145
+        },
+        {
+          "id": "e1",
+          "kind": "ask_email",
+          "text": "Combinado! Me manda seu melhor e-mail — é para lá que vai o aviso da abertura 👇",
+          "x": 660,
+          "y": 315
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "lista-de-espera",
+          "x": 960,
+          "y": 145
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Prontinho, você está na lista ✅\n\nPara eu te mandar o conteúdo certo até lá: onde você está hoje?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Ainda não comecei"
+            },
+            {
+              "label": "Já comecei"
+            },
+            {
+              "label": "Já faço há tempo"
+            }
+          ],
+          "x": 1260,
+          "y": 145
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "nivel-iniciante",
+          "x": 1560,
+          "y": 60
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "nivel-intermediario",
+          "x": 1560,
+          "y": 230
+        },
+        {
+          "id": "t4",
+          "kind": "tag",
+          "tag": "nivel-avancado",
+          "x": 1560,
+          "y": 400
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "Perfeito, anotado 📝\n\nEnquanto a abertura não chega, começa por aqui:",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver o conteúdo",
+              "url": "https://exemplo.com/[CONTEUDO-GRATUITO]"
+            }
+          ],
+          "x": 1860,
+          "y": 230
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 1200,
+          "x": 2160,
+          "y": 230
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "{{first_name}}, está chegando a abertura de [NOME DO PROGRAMA] 👀\n\nDeixei aqui tudo o que você precisa saber antes de decidir:",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ler antes",
+              "url": "https://exemplo.com/[PAGINA-DE-ESPERA]"
+            }
+          ],
+          "x": 2460,
+          "y": 230
+        },
+        {
+          "id": "m8",
+          "kind": "message",
+          "text": "Tranquilo, {{first_name}} 🙂 Se mudar de ideia, é só me mandar “lista” por aqui.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 315
+        },
+        {
+          "id": "t8",
+          "kind": "tag",
+          "tag": "lista-recusou",
+          "x": 1260,
+          "y": 315
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "e1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "m2"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:0",
+          "to": "e1"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:1",
+          "to": "m8"
+        },
+        {
+          "from": "m8",
+          "handle": "next",
+          "to": "t8"
+        },
+        {
+          "from": "e1",
+          "handle": "next",
+          "to": "t1"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:0",
+          "to": "t2"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:1",
+          "to": "t3"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:2",
+          "to": "t4"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "t4",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "m4",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m5"
+        }
+      ]
+    },
+    {
+      "name": "3 · Cupom de primeira compra",
+      "descricao": "Entrega o cupom no direct depois do follow, cobra o uso 3 horas depois e faz a última chamada antes de vencer. Separa quem comprou, quem travou e quem sumiu.",
+      "trigger": "comment",
+      "match_type": "contains",
+      "keywords": [
+        "cupom",
+        "desconto",
+        "quero"
+      ],
+      "public_replies": [
+        "Cupom no seu direct 🎟️",
+        "Te mandei no privado ✅"
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 230
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! Tenho um cupom de [X]% para a primeira compra 🎟️\n\nQuer que eu libere pra você?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Quero o cupom 🎟️"
+            },
+            {
+              "label": "Como funciona?"
+            }
+          ],
+          "x": 360,
+          "y": 230
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Simples: o cupom dá [X]% em [O QUE VALE], vale por [PRAZO] e só na primeira compra. Não acumula com outras promoções.\n\nLibero pra você?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Libera sim ✅"
+            },
+            {
+              "label": "Depois eu vejo"
+            }
+          ],
+          "x": 660,
+          "y": 145
+        },
+        {
+          "id": "g1",
+          "kind": "follow_gate",
+          "text": "Fechado! Me segue aqui para eu conseguir te mandar — e para você ver as promoções antes de todo mundo 👇",
+          "buttonLabel": "Já sigo ✅",
+          "x": 660,
+          "y": 315
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "cupom-enviado",
+          "x": 960,
+          "y": 145
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Seu cupom é [CÓDIGO] 🎟️\n\n[X]% de desconto, válido até [DATA]. É só aplicar no carrinho:",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Usar agora",
+              "url": "https://exemplo.com/[SUA-LOJA]"
+            }
+          ],
+          "x": 1260,
+          "y": 145
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 180,
+          "x": 1560,
+          "y": 230
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "{{first_name}}, conseguiu usar o cupom [CÓDIGO]?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Comprei! 🛍️"
+            },
+            {
+              "label": "Deu erro 😕"
+            },
+            {
+              "label": "Ainda tô vendo"
+            }
+          ],
+          "x": 1860,
+          "y": 230
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "comprou",
+          "x": 2160,
+          "y": 60
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "Obaaa! Obrigado pela confiança 🧡\n\nQualquer coisa sobre a entrega, é só me chamar por aqui.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2460,
+          "y": 60
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "erro-no-cupom",
+          "x": 2160,
+          "y": 230
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "Me conta o que apareceu na tela que eu resolvo pra você 🙏 (pode mandar print)",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2460,
+          "y": 230
+        },
+        {
+          "id": "d2",
+          "kind": "delay",
+          "minutes": 1200,
+          "x": 2160,
+          "y": 400
+        },
+        {
+          "id": "m8",
+          "kind": "message",
+          "text": "Último aviso, {{first_name}} 😊 O cupom [CÓDIGO] vence [DATA]:",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Usar o cupom",
+              "url": "https://exemplo.com/[SUA-LOJA]"
+            }
+          ],
+          "x": 2460,
+          "y": 400
+        },
+        {
+          "id": "m7",
+          "kind": "message",
+          "text": "Sem problema! Quando quiser, é só mandar “cupom” aqui 😉",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 315
+        },
+        {
+          "id": "t7",
+          "kind": "tag",
+          "tag": "cupom-recusou",
+          "x": 1260,
+          "y": 315
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "g1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "m2"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:0",
+          "to": "g1"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:1",
+          "to": "m7"
+        },
+        {
+          "from": "m7",
+          "handle": "next",
+          "to": "t7"
+        },
+        {
+          "from": "g1",
+          "handle": "next",
+          "to": "t1"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m3",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:0",
+          "to": "t2"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:1",
+          "to": "t3"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:2",
+          "to": "d2"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "m5"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "m6"
+        },
+        {
+          "from": "d2",
+          "handle": "next",
+          "to": "m8"
+        }
+      ]
+    },
+    {
+      "name": "4 · Qualificação de lead (serviço)",
+      "descricao": "Três perguntas no direct que separam o que a pessoa precisa, para quando precisa e o e-mail dela — e terminam no link da sua agenda. Cada resposta vira etiqueta em Contatos.",
+      "trigger": "dm",
+      "match_type": "contains",
+      "keywords": [
+        "orçamento",
+        "orcamento",
+        "proposta",
+        "quero contratar",
+        "valores"
+      ],
+      "public_replies": [],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 315
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! Aqui é o atendimento de [SEU NEGÓCIO] 👋\n\nPara eu te passar um orçamento certo (e não um chute), me responde 3 coisinhas rápidas. Vamos?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Vamos lá 👍"
+            },
+            {
+              "label": "Só uma dúvida"
+            }
+          ],
+          "x": 360,
+          "y": 315
+        },
+        {
+          "id": "m9",
+          "kind": "message",
+          "text": "Pode perguntar! Mas se preferir, me diz o que você precisa que eu já te respondo com valor.",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Ok, vamos lá 👍"
+            },
+            {
+              "label": "Falar com pessoa"
+            }
+          ],
+          "x": 660,
+          "y": 230
+        },
+        {
+          "id": "t9",
+          "kind": "tag",
+          "tag": "quer-atendimento-humano",
+          "x": 960,
+          "y": 60
+        },
+        {
+          "id": "m10",
+          "kind": "message",
+          "text": "Já te chamei aqui, {{first_name}} 🙌\n\nMe deixa um resumo do que você precisa que eu respondo pessoalmente em até [PRAZO].",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 1260,
+          "y": 230
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "1 de 3 — O que você precisa?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "[SERVIÇO 1]"
+            },
+            {
+              "label": "[SERVIÇO 2]"
+            },
+            {
+              "label": "Outra coisa"
+            }
+          ],
+          "x": 660,
+          "y": 400
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "servico-1",
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "servico-2",
+          "x": 960,
+          "y": 400
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "servico-outro",
+          "x": 960,
+          "y": 570
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "2 de 3 — Para quando você precisa?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Essa semana 🔥"
+            },
+            {
+              "label": "Neste mês"
+            },
+            {
+              "label": "Só pesquisando"
+            }
+          ],
+          "x": 1260,
+          "y": 400
+        },
+        {
+          "id": "t4",
+          "kind": "tag",
+          "tag": "prazo-urgente",
+          "x": 1560,
+          "y": 145
+        },
+        {
+          "id": "t5",
+          "kind": "tag",
+          "tag": "prazo-do-mes",
+          "x": 1560,
+          "y": 315
+        },
+        {
+          "id": "t6",
+          "kind": "tag",
+          "tag": "so-pesquisando",
+          "x": 1560,
+          "y": 485
+        },
+        {
+          "id": "e1",
+          "kind": "ask_email",
+          "text": "3 de 3 — Me manda seu melhor e-mail que eu envio a proposta por lá também 👇",
+          "x": 1860,
+          "y": 315
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "Perfeito, {{first_name}}! Já tenho o que preciso ✅\n\nO próximo passo é uma conversa de [DURAÇÃO], sem compromisso, para eu entender seu caso e te passar o valor fechado.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Escolher horário",
+              "url": "https://exemplo.com/[SUA-AGENDA]"
+            }
+          ],
+          "x": 2160,
+          "y": 315
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 1200,
+          "x": 2460,
+          "y": 315
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "{{first_name}}, conseguiu marcar o horário?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Marquei ✅"
+            },
+            {
+              "label": "Ainda não"
+            }
+          ],
+          "x": 2760,
+          "y": 315
+        },
+        {
+          "id": "t7",
+          "kind": "tag",
+          "tag": "agendou",
+          "x": 3060,
+          "y": 230
+        },
+        {
+          "id": "m7",
+          "kind": "message",
+          "text": "Sem stress! A agenda continua aberta aqui 👇",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver horários",
+              "url": "https://exemplo.com/[SUA-AGENDA]"
+            }
+          ],
+          "x": 3060,
+          "y": 400
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "m2"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "m9"
+        },
+        {
+          "from": "m9",
+          "handle": "btn:0",
+          "to": "m2"
+        },
+        {
+          "from": "m9",
+          "handle": "btn:1",
+          "to": "t9"
+        },
+        {
+          "from": "t9",
+          "handle": "next",
+          "to": "m10"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:0",
+          "to": "t1"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:1",
+          "to": "t2"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:2",
+          "to": "t3"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:0",
+          "to": "t4"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:1",
+          "to": "t5"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:2",
+          "to": "t6"
+        },
+        {
+          "from": "t4",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "t5",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "t6",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "e1",
+          "handle": "next",
+          "to": "m5"
+        },
+        {
+          "from": "m5",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m6"
+        },
+        {
+          "from": "m6",
+          "handle": "btn:0",
+          "to": "t7"
+        },
+        {
+          "from": "m6",
+          "handle": "btn:1",
+          "to": "m7"
+        }
+      ]
+    },
+    {
+      "name": "5 · Menu de atendimento no story",
+      "descricao": "Qualquer resposta a story vira um menu de três caminhos: comprar, tirar dúvida ou falar com uma pessoa. Nenhuma resposta de story fica sem retorno.",
+      "trigger": "story",
+      "match_type": "any",
+      "keywords": [],
+      "public_replies": [],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 315
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}, obrigado por responder o story 🧡\n\nComo eu posso te ajudar?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Quero comprar 🛍️"
+            },
+            {
+              "label": "Tenho uma dúvida"
+            },
+            {
+              "label": "Falar com alguém"
+            }
+          ],
+          "x": 360,
+          "y": 315
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "interesse-compra",
+          "x": 660,
+          "y": 145
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Show! É por aqui 👇\n\n[O QUE ESTÁ NO STORY] — [PREÇO E CONDIÇÃO].",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver e comprar",
+              "url": "https://exemplo.com/[SEU-LINK]"
+            }
+          ],
+          "x": 960,
+          "y": 60
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 240,
+          "x": 1260,
+          "y": 315
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "{{first_name}}, ficou alguma dúvida antes de fechar?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Tudo certo ✅"
+            },
+            {
+              "label": "Tenho dúvida"
+            }
+          ],
+          "x": 1560,
+          "y": 315
+        },
+        {
+          "id": "m8",
+          "kind": "message",
+          "text": "Perfeito! Qualquer coisa é só me chamar por aqui 🙌",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 1860,
+          "y": 315
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Pode perguntar 🙂 Sobre o que é?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Preço"
+            },
+            {
+              "label": "Prazo e entrega"
+            },
+            {
+              "label": "Outra dúvida"
+            }
+          ],
+          "x": 660,
+          "y": 315
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "[EXPLICAÇÃO DO PREÇO: valor, formas de pagamento e parcelamento].",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver detalhes",
+              "url": "https://exemplo.com/[SEU-LINK]"
+            }
+          ],
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "m7",
+          "kind": "message",
+          "text": "[EXPLICAÇÃO DO PRAZO: quanto tempo leva, como é enviado e como acompanhar o pedido].",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 400
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "duvida-aberta",
+          "x": 660,
+          "y": 485
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "Já anotei aqui, {{first_name}} 👋\n\nMe escreve o que você precisa que uma pessoa da equipe responde em até [PRAZO], no horário [HORÁRIO DE ATENDIMENTO].",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 570
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "t1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "m3"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:2",
+          "to": "t2"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m2"
+        },
+        {
+          "from": "m2",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m5"
+        },
+        {
+          "from": "m5",
+          "handle": "btn:0",
+          "to": "m8"
+        },
+        {
+          "from": "m5",
+          "handle": "btn:1",
+          "to": "m3"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:0",
+          "to": "m6"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:1",
+          "to": "m7"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:2",
+          "to": "t2"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "m4"
+        }
+      ]
+    },
+    {
+      "name": "6 · Quem pergunta o preço",
+      "descricao": "Responde “quanto custa” com o valor na hora e três saídas: ver por dentro, ver um plano mais leve ou fechar. Etiqueta quem falou que está caro, para você trabalhar essa lista depois.",
+      "trigger": "dm",
+      "match_type": "contains",
+      "keywords": [
+        "preço",
+        "preco",
+        "valor",
+        "quanto custa",
+        "quanto é",
+        "quanto e"
+      ],
+      "public_replies": [],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 230
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! Boa pergunta 👇\n\n[NOME DO PRODUTO] custa [PREÇO] — ou [CONDIÇÃO PARCELADA]. Nele vai [O QUE ESTÁ INCLUÍDO].\n\nO que faz mais sentido pra você agora?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Ver por dentro 👀"
+            },
+            {
+              "label": "Está caro pra mim"
+            },
+            {
+              "label": "Quero fechar 🤝"
+            }
+          ],
+          "x": 360,
+          "y": 230
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Deixei a página com tudo destrinchado: o que entra, quanto tempo leva e o que dizem as pessoas que já fizeram.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver a página",
+              "url": "https://exemplo.com/[SUA-PAGINA]"
+            }
+          ],
+          "x": 660,
+          "y": 60
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "viu-a-pagina",
+          "x": 960,
+          "y": 60
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 1200,
+          "x": 1260,
+          "y": 230
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "{{first_name}}, conseguiu dar uma olhada? Ficou alguma dúvida?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Ficou uma dúvida"
+            },
+            {
+              "label": "Tudo claro 👍"
+            }
+          ],
+          "x": 1560,
+          "y": 230
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "Manda aqui que eu te respondo 🙂",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 1860,
+          "y": 145
+        },
+        {
+          "id": "m7",
+          "kind": "message",
+          "text": "Então é só isso 👇",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Começar agora",
+              "url": "https://exemplo.com/[CHECKOUT]"
+            }
+          ],
+          "x": 1860,
+          "y": 315
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "objecao-preco",
+          "x": 660,
+          "y": 230
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Entendo, {{first_name}} 🙂\n\nDuas saídas: dá para parcelar em [X]x de [VALOR], e existe [PLANO MENOR] por [PREÇO MENOR], que já resolve [O PROBLEMA PRINCIPAL].",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver o plano menor",
+              "url": "https://exemplo.com/[PLANO-MENOR]"
+            }
+          ],
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "quer-fechar",
+          "x": 660,
+          "y": 400
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "Perfeito! É por aqui 👇\n\nSe travar alguma coisa no pagamento, me chama nesta mesma conversa que eu resolvo.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Finalizar compra",
+              "url": "https://exemplo.com/[CHECKOUT]"
+            }
+          ],
+          "x": 960,
+          "y": 400
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "m2"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "t2"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:2",
+          "to": "t3"
+        },
+        {
+          "from": "m2",
+          "handle": "next",
+          "to": "t1"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m5"
+        },
+        {
+          "from": "m5",
+          "handle": "btn:0",
+          "to": "m6"
+        },
+        {
+          "from": "m5",
+          "handle": "btn:1",
+          "to": "m7"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "m4"
+        }
+      ]
+    },
+    {
+      "name": "7 · Agendamento de avaliação",
+      "descricao": "Pergunta o período preferido, pede o follow, manda a agenda e confere 2 horas depois se a pessoa marcou. Quem não achou horário cai numa lista de encaixe.",
+      "trigger": "comment",
+      "match_type": "contains",
+      "keywords": [
+        "agendar",
+        "avaliação",
+        "avaliacao",
+        "horário",
+        "horario",
+        "quero"
+      ],
+      "public_replies": [
+        "Te chamei no direct para marcar 📅",
+        "Já estou no seu privado ✅"
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 230
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! Vamos marcar a sua [AVALIAÇÃO / SESSÃO] 📅\n\nSão [DURAÇÃO] em [ENDEREÇO OU ONLINE], sem compromisso. Qual período funciona melhor pra você?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Manhã ☀️"
+            },
+            {
+              "label": "Tarde 🌤️"
+            },
+            {
+              "label": "Noite 🌙"
+            }
+          ],
+          "x": 360,
+          "y": 230
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "prefere-manha",
+          "x": 660,
+          "y": 60
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "prefere-tarde",
+          "x": 660,
+          "y": 230
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "prefere-noite",
+          "x": 660,
+          "y": 400
+        },
+        {
+          "id": "g1",
+          "kind": "follow_gate",
+          "text": "Perfeito! Me segue aqui para eu conseguir te mandar a confirmação e os lembretes por este chat 👇",
+          "buttonLabel": "Já sigo ✅",
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Fechado! Escolhe o horário que ficar melhor pra você 👇",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver horários",
+              "url": "https://exemplo.com/[SUA-AGENDA]"
+            }
+          ],
+          "x": 1260,
+          "y": 230
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 120,
+          "x": 1560,
+          "y": 230
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "{{first_name}}, conseguiu escolher o horário?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Marquei ✅"
+            },
+            {
+              "label": "Não achei horário"
+            },
+            {
+              "label": "Mudei de ideia"
+            }
+          ],
+          "x": 1860,
+          "y": 230
+        },
+        {
+          "id": "t4",
+          "kind": "tag",
+          "tag": "agendou",
+          "x": 2160,
+          "y": 60
+        },
+        {
+          "id": "e1",
+          "kind": "ask_email",
+          "text": "Show! Me manda seu e-mail que eu envio a confirmação e o lembrete por lá também 👇",
+          "x": 2460,
+          "y": 60
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "Confirmado, {{first_name}}! Te espero 🙌\n\nSe precisar remarcar, é só me avisar por aqui — sem problema nenhum.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2760,
+          "y": 230
+        },
+        {
+          "id": "t5",
+          "kind": "tag",
+          "tag": "sem-horario",
+          "x": 2160,
+          "y": 230
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "Me diz dois dias e horários que funcionam pra você que eu abro um encaixe 🙏",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2460,
+          "y": 230
+        },
+        {
+          "id": "t6",
+          "kind": "tag",
+          "tag": "desistiu",
+          "x": 2160,
+          "y": 400
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "Sem problema 🙂 O convite fica de pé — é só mandar “agendar” aqui quando fizer sentido.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2460,
+          "y": 400
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "t1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "t2"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:2",
+          "to": "t3"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "g1"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "g1"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "g1"
+        },
+        {
+          "from": "g1",
+          "handle": "next",
+          "to": "m2"
+        },
+        {
+          "from": "m2",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:0",
+          "to": "t4"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:1",
+          "to": "t5"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:2",
+          "to": "t6"
+        },
+        {
+          "from": "t4",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "e1",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "t5",
+          "handle": "next",
+          "to": "m5"
+        },
+        {
+          "from": "t6",
+          "handle": "next",
+          "to": "m6"
+        }
+      ]
+    },
+    {
+      "name": "8 · Aula ao vivo com lembrete",
+      "descricao": "Inscreve no comentário, guarda o e-mail, manda o link da sala e volta 20 horas depois para confirmar presença — com o “estamos começando” uma hora antes de entrar.",
+      "trigger": "comment",
+      "match_type": "contains",
+      "keywords": [
+        "aula",
+        "quero participar",
+        "eu quero",
+        "live"
+      ],
+      "public_replies": [
+        "Te mandei o link no direct 📩",
+        "Já foi para o seu privado ✅"
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 145
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! A aula [NOME DA AULA] é dia [DATA], às [HORA] 🎥\n\nÉ gratuita e ao vivo. Quer que eu te mande o link e o lembrete?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Quero sim 🙌"
+            },
+            {
+              "label": "Sobre o que é?"
+            }
+          ],
+          "x": 360,
+          "y": 145
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Na aula eu mostro [PONTO 1], [PONTO 2] e [PONTO 3] — em [DURAÇÃO], direto ao ponto, com espaço para perguntas no fim.\n\nTe garanto uma vaga?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Garante sim ✅"
+            },
+            {
+              "label": "Fica pra próxima"
+            }
+          ],
+          "x": 660,
+          "y": 60
+        },
+        {
+          "id": "e1",
+          "kind": "ask_email",
+          "text": "Perfeito! Me manda seu melhor e-mail que a inscrição vai para lá 👇",
+          "x": 660,
+          "y": 230
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "inscrito-na-aula",
+          "x": 960,
+          "y": 60
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Inscrição confirmada ✅\n\nSalva o link da sala — é o mesmo no dia da aula:",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Salvar o link",
+              "url": "https://exemplo.com/[LINK-DA-SALA]"
+            }
+          ],
+          "x": 1260,
+          "y": 60
+        },
+        {
+          "id": "d1",
+          "kind": "delay",
+          "minutes": 1200,
+          "x": 1560,
+          "y": 145
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "{{first_name}}, a aula [NOME DA AULA] é [HOJE OU AMANHÃ] às [HORA] ⏰\n\nVocê vem?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Tô dentro 🔥"
+            },
+            {
+              "label": "Não vou conseguir"
+            }
+          ],
+          "x": 1860,
+          "y": 145
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "confirmou-presenca",
+          "x": 2160,
+          "y": 60
+        },
+        {
+          "id": "d2",
+          "kind": "delay",
+          "minutes": 60,
+          "x": 2460,
+          "y": 60
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "Começando em instantes, {{first_name}}! Entra por aqui 👇",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Entrar na sala",
+              "url": "https://exemplo.com/[LINK-DA-SALA]"
+            }
+          ],
+          "x": 2760,
+          "y": 145
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "nao-vai-a-aula",
+          "x": 2160,
+          "y": 230
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "Sem problema! Eu deixo a gravação disponível por [PRAZO] e te mando o link por aqui 🙌",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2460,
+          "y": 230
+        },
+        {
+          "id": "m8",
+          "kind": "message",
+          "text": "Combinado! Eu te aviso quando tiver a próxima 😉",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "t8",
+          "kind": "tag",
+          "tag": "aula-recusou",
+          "x": 1260,
+          "y": 230
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "e1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "m2"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:0",
+          "to": "e1"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:1",
+          "to": "m8"
+        },
+        {
+          "from": "m8",
+          "handle": "next",
+          "to": "t8"
+        },
+        {
+          "from": "e1",
+          "handle": "next",
+          "to": "t1"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m3",
+          "handle": "next",
+          "to": "d1"
+        },
+        {
+          "from": "d1",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:0",
+          "to": "t2"
+        },
+        {
+          "from": "m4",
+          "handle": "btn:1",
+          "to": "t3"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "d2"
+        },
+        {
+          "from": "d2",
+          "handle": "next",
+          "to": "m5"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "m6"
+        }
+      ]
+    },
+    {
+      "name": "9 · Atendimento 24h da loja",
+      "descricao": "Responde na hora as três perguntas que mais chegam no direct de loja: cadê meu pedido, como troco e qual o prazo. Quem quer gente é etiquetado e some da fila automática.",
+      "trigger": "dm",
+      "match_type": "any",
+      "keywords": [],
+      "public_replies": [],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 315
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! 👋 Sou o atendimento de [SUA LOJA] e respondo na hora, a qualquer horário.\n\nSobre o que você precisa?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Meu pedido 📦"
+            },
+            {
+              "label": "Trocas e prazos"
+            },
+            {
+              "label": "Falar com pessoa"
+            }
+          ],
+          "x": 360,
+          "y": 315
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Para acompanhar seu pedido, é só entrar com o número que veio no e-mail de confirmação 👇\n\nSe já passou de [PRAZO] sem atualizar, me chama aqui que eu verifico pra você.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Rastrear pedido",
+              "url": "https://exemplo.com/[RASTREIO]"
+            }
+          ],
+          "x": 660,
+          "y": 145
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Claro! O que você quer saber?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Prazo de entrega"
+            },
+            {
+              "label": "Como trocar"
+            },
+            {
+              "label": "Formas de pagar"
+            }
+          ],
+          "x": 660,
+          "y": 315
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "📦 Prazo de entrega\n\n[REGIÃO 1]: [X] dias úteis\n[REGIÃO 2]: [Y] dias úteis\n\nO envio sai em até [Z] dias úteis depois de o pagamento ser confirmado.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 60
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "🔁 Trocas e devoluções\n\nVocê tem [X] dias corridos depois de receber. O produto precisa estar [CONDIÇÃO]. A primeira troca é [GRÁTIS OU COM CUSTO].",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Abrir uma troca",
+              "url": "https://exemplo.com/[TROCAS]"
+            }
+          ],
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "💳 Formas de pagamento\n\nPix (com [X]% de desconto), cartão em até [X]x e boleto.\n\nNo Pix o envio é liberado na hora que o pagamento cai.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 400
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "atendimento-humano",
+          "x": 660,
+          "y": 485
+        },
+        {
+          "id": "m7",
+          "kind": "message",
+          "text": "Já chamei alguém da equipe 🙋\n\nEscreve aqui o que você precisa (com o número do pedido, se tiver) que a gente responde em até [PRAZO], no horário [HORÁRIO DE ATENDIMENTO].",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 960,
+          "y": 570
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "m2"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "m3"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:2",
+          "to": "t1"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:0",
+          "to": "m4"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:1",
+          "to": "m5"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:2",
+          "to": "m6"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m7"
+        }
+      ]
+    },
+    {
+      "name": "10 · Quiz de 2 perguntas",
+      "descricao": "Duas perguntas, quatro perfis e uma recomendação diferente para cada um. A pessoa sai etiquetada, com e-mail e com o conteúdo certo na mão — e você sai com a lista separada.",
+      "trigger": "comment",
+      "match_type": "contains",
+      "keywords": [
+        "quiz",
+        "teste",
+        "descobrir",
+        "eu quero"
+      ],
+      "public_replies": [
+        "Te mandei o quiz no direct 🧩",
+        "Começou! Confere o privado 👀"
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "x": 60,
+          "y": 315
+        },
+        {
+          "id": "m1",
+          "kind": "message",
+          "text": "Oi {{first_name}}! Duas perguntas rápidas e eu te digo qual [CAMINHO OU PLANO] combina com você 🧩\n\nPergunta 1: onde você está hoje?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Começando do zero"
+            },
+            {
+              "label": "Já tenho algo"
+            }
+          ],
+          "x": 360,
+          "y": 315
+        },
+        {
+          "id": "t1",
+          "kind": "tag",
+          "tag": "perfil-iniciante",
+          "x": 660,
+          "y": 230
+        },
+        {
+          "id": "t2",
+          "kind": "tag",
+          "tag": "perfil-avancado",
+          "x": 660,
+          "y": 400
+        },
+        {
+          "id": "m2",
+          "kind": "message",
+          "text": "Ótimo, todo mundo começa aí 🌱\n\nPergunta 2: o que mais te trava hoje?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Falta de tempo ⏳"
+            },
+            {
+              "label": "Não sei por onde"
+            }
+          ],
+          "x": 960,
+          "y": 230
+        },
+        {
+          "id": "m3",
+          "kind": "message",
+          "text": "Boa, então dá para acelerar 🚀\n\nPergunta 2: o que mais te trava agora?",
+          "buttonMode": "reply",
+          "buttons": [
+            {
+              "label": "Poucos clientes"
+            },
+            {
+              "label": "Falta de processo"
+            }
+          ],
+          "x": 960,
+          "y": 400
+        },
+        {
+          "id": "t3",
+          "kind": "tag",
+          "tag": "trava-tempo",
+          "x": 1260,
+          "y": 60
+        },
+        {
+          "id": "t4",
+          "kind": "tag",
+          "tag": "trava-direcao",
+          "x": 1260,
+          "y": 230
+        },
+        {
+          "id": "t5",
+          "kind": "tag",
+          "tag": "trava-clientes",
+          "x": 1260,
+          "y": 400
+        },
+        {
+          "id": "t6",
+          "kind": "tag",
+          "tag": "trava-processo",
+          "x": 1260,
+          "y": 570
+        },
+        {
+          "id": "m4",
+          "kind": "message",
+          "text": "Seu perfil: começando com pouco tempo ⏳\n\nO caminho mais curto pra você é [RECOMENDAÇÃO 1], porque [MOTIVO EM UMA FRASE].",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver o caminho",
+              "url": "https://exemplo.com/[RECOMENDACAO-1]"
+            }
+          ],
+          "x": 1560,
+          "y": 60
+        },
+        {
+          "id": "m5",
+          "kind": "message",
+          "text": "Seu perfil: começando sem direção 🧭\n\nComeça por [RECOMENDAÇÃO 2] — é o que organiza tudo antes de você gastar energia à toa.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver o caminho",
+              "url": "https://exemplo.com/[RECOMENDACAO-2]"
+            }
+          ],
+          "x": 1560,
+          "y": 230
+        },
+        {
+          "id": "m6",
+          "kind": "message",
+          "text": "Seu perfil: rodando, mas sem clientes 📣\n\nSua prioridade é [RECOMENDAÇÃO 3]: [MOTIVO EM UMA FRASE].",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver o caminho",
+              "url": "https://exemplo.com/[RECOMENDACAO-3]"
+            }
+          ],
+          "x": 1560,
+          "y": 400
+        },
+        {
+          "id": "m7",
+          "kind": "message",
+          "text": "Seu perfil: rodando, mas no sufoco 🧯\n\nAntes de vender mais, arruma [RECOMENDAÇÃO 4] — senão o volume novo vira problema.",
+          "buttonMode": "url",
+          "buttons": [
+            {
+              "label": "Ver o caminho",
+              "url": "https://exemplo.com/[RECOMENDACAO-4]"
+            }
+          ],
+          "x": 1560,
+          "y": 570
+        },
+        {
+          "id": "e1",
+          "kind": "ask_email",
+          "text": "Quer o resultado completo por e-mail também, com o passo a passo? Manda seu melhor e-mail 👇",
+          "x": 1860,
+          "y": 315
+        },
+        {
+          "id": "m8",
+          "kind": "message",
+          "text": "Enviado 📩\n\nE se quiser conversar sobre o seu caso, é só me responder aqui — eu leio tudo.",
+          "buttonMode": "reply",
+          "buttons": [],
+          "x": 2160,
+          "y": 315
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "handle": "next",
+          "to": "m1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:0",
+          "to": "t1"
+        },
+        {
+          "from": "m1",
+          "handle": "btn:1",
+          "to": "t2"
+        },
+        {
+          "from": "t1",
+          "handle": "next",
+          "to": "m2"
+        },
+        {
+          "from": "t2",
+          "handle": "next",
+          "to": "m3"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:0",
+          "to": "t3"
+        },
+        {
+          "from": "m2",
+          "handle": "btn:1",
+          "to": "t4"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:0",
+          "to": "t5"
+        },
+        {
+          "from": "m3",
+          "handle": "btn:1",
+          "to": "t6"
+        },
+        {
+          "from": "t3",
+          "handle": "next",
+          "to": "m4"
+        },
+        {
+          "from": "t4",
+          "handle": "next",
+          "to": "m5"
+        },
+        {
+          "from": "t5",
+          "handle": "next",
+          "to": "m6"
+        },
+        {
+          "from": "t6",
+          "handle": "next",
+          "to": "m7"
+        },
+        {
+          "from": "m4",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "m5",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "m6",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "m7",
+          "handle": "next",
+          "to": "e1"
+        },
+        {
+          "from": "e1",
+          "handle": "next",
+          "to": "m8"
+        }
+      ]
+    }
+  ]
+}
