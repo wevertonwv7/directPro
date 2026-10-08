@@ -1,107 +1,76 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  exchangeCodeForShortToken,
-  exchangeForLongLivedToken,
-  getProfile,
-  subscribeToWebhooks,
-} from "@/lib/ig";
-import { oauthState } from "@/lib/auth";
+import { exchangeCodeForToken, exchangeForLongLivedToken, listInstagramPages, grantedPermissions, tokenExpiration, INSTAGRAM_FB_SCOPES } from "@/lib/fb";
+import { subscribeToWebhooks } from "@/lib/ig-facebook";
+import { isValidSession, SESSION_COOKIE } from "@/lib/auth";
 import { getConfig, upsertAccount } from "@/lib/db";
-import { logEvent } from "@/lib/engine";
-import { canonicalAppUrl } from "@/lib/app-url";
-import { diagnosticoDaMeta } from "@/lib/meta-erros";
+import { metaCredentials } from "@/lib/meta-config";
+import { consumeOAuthState, stateMatches, OAUTH_COOKIE } from "@/lib/oauth";
 import { ACCOUNT_COOKIE } from "@/lib/account";
+import { logEvent } from "@/lib/engine";
+import { redactSecrets } from "@/lib/secrets";
 
 export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
-  const appUrl = req.nextUrl.origin;
   const q = req.nextUrl.searchParams;
-  const code = q.get("code");
-  const state = q.get("state");
-
-  const fail = (reason: string) =>
-    NextResponse.redirect(`${appUrl}/setup?erro=${encodeURIComponent(reason)}`);
-
-  if (q.get("error")) return fail(q.get("error_description") ?? "autorização negada");
-  if (!code) return fail("código ausente");
-  if (state !== oauthState()) return fail("state inválido");
-
-  const config = await getConfig();
-  if (!config.instagram_app_id || !config.instagram_app_secret) {
-    return fail("App ID e chave secreta não cadastrados no /setup");
-  }
-
-  // Exatamente o mesmo cálculo do /api/oauth/login. Fica numa variável porque
-  // ele entra na mensagem de erro: sem ver QUAL endereço o app mandou, não há
-  // como saber o que cadastrar na Meta.
-  const redirectUri = `${canonicalAppUrl(config.app_url, appUrl)}/api/oauth/callback`;
-
+  const finish = (path: string) => {
+    const response = NextResponse.redirect(new URL(path, req.nextUrl.origin));
+    response.cookies.set(OAUTH_COOKIE, "", { path: "/api/oauth", maxAge: 0, httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
+    return response;
+  };
+  const fail = (reason: string) => finish(`/setup?erro=${encodeURIComponent(reason)}`);
   try {
-    const short = await exchangeCodeForShortToken({
-      appId: config.instagram_app_id,
-      appSecret: config.instagram_app_secret,
-      // precisa ser IDÊNTICO ao usado no /api/oauth/login
-      redirectUri,
-      code,
-    });
-    const long = await exchangeForLongLivedToken(config.instagram_app_secret, short.access_token);
-    const profile = await getProfile(long.access_token);
-
-    const igUserId = String(profile.user_id ?? short.user_id);
-    // Cada conta autorizada vira uma linha em accounts — conectar outra conta
-    // não substitui a anterior.
-    await upsertAccount({
-      ig_user_id: igUserId,
-      username: profile.username ?? null,
-      name: profile.name ?? null,
-      profile_picture_url: profile.profile_picture_url ?? null,
-      access_token: long.access_token,
-      token_expires_at: new Date(Date.now() + long.expires_in * 1000),
-    });
-
-    // Liga os webhooks de comments/messages para esta conta.
-    // NÃO é fatal: a conta já está salva e o login deu certo. Se a assinatura
-    // falhar aqui, mandar o usuário para uma tela de erro faz parecer que a
-    // conexão não funcionou — quando na verdade só falta reassinar (botão no
-    // /setup). Então registramos o aviso e seguimos.
-    let avisoAssinatura: string | null = null;
-    try {
-      await subscribeToWebhooks(igUserId, long.access_token);
-    } catch (err) {
-      avisoAssinatura = err instanceof Error ? err.message.slice(0, 160) : "erro";
+    const session = req.cookies.get(SESSION_COOKIE)?.value;
+    const state = q.get("state");
+    if (!isValidSession(session) || !stateMatches(state, req.cookies.get(OAUTH_COOKIE)?.value)) {
+      return fail("Sessão ou state inválido. Entre no painel e reinicie a conexão.");
+    }
+    const redirectUri = await consumeOAuthState(state!, session!);
+    if (!redirectUri) return fail("A autorização expirou ou já foi utilizada. Reinicie a conexão.");
+    if (q.get("error")) return fail("Autorização cancelada ou negada no Facebook. Reinicie a conexão e conceda as permissões.");
+    const code = q.get("code");
+    if (!code) return fail("O Facebook não retornou um código de autorização.");
+    const config = await getConfig();
+    const { appId, appSecret } = metaCredentials(config);
+    if (!appId || !appSecret) return fail("Credenciais do app principal da Meta ausentes.");
+    const short = await exchangeCodeForToken({ appId, appSecret, redirectUri, code });
+    const long = await exchangeForLongLivedToken(appId, appSecret, short.access_token);
+    const granted = await grantedPermissions(long.access_token);
+    const missing = INSTAGRAM_FB_SCOPES.filter((scope) => !granted.includes(scope));
+    if (missing.length) return fail(`Permissões não concedidas: ${missing.join(", ")}. Confira o acesso no app da Meta e reconecte.`);
+    const pages = await listInstagramPages(long.access_token);
+    if (!pages.length) return fail("Nenhuma Página foi autorizada. No Facebook, selecione a Página vinculada ao Instagram e confira seu acesso a ela.");
+    const linked = pages.filter((p) => p.instagram_business_account?.id && p.access_token);
+    if (!linked.length) return fail("As Páginas autorizadas não têm Instagram profissional vinculado. Vincule sua conta profissional à Página nas configurações do Facebook.");
+    const warnings: string[] = [];
+    const connected: string[] = [];
+    for (const page of linked) {
+      const ig = page.instagram_business_account!;
       try {
-        await logEvent(igUserId, "subscribe_failed", { message: avisoAssinatura });
-      } catch {
-        // banco fora do ar: o aviso na URL ainda chega ao usuário
+        const expiresAt = await tokenExpiration(page.access_token, appId, appSecret);
+        await upsertAccount({
+          ig_user_id: ig.id, platform: "instagram", auth_provider: "facebook_login",
+          facebook_page_id: page.id, facebook_page_name: page.name ?? null,
+          username: ig.username ?? null, name: ig.name ?? null, profile_picture_url: ig.profile_picture_url ?? null,
+          access_token: page.access_token, token_expires_at: expiresAt,
+        });
+        connected.push(ig.id);
+        try { await subscribeToWebhooks(page.id, page.access_token); }
+        catch (err) {
+          warnings.push(`@${ig.username ?? ig.id}: conta salva; assinatura falhou. Use Reassinar webhooks.`);
+          await logEvent(ig.id, "subscribe_failed", { message: redactSecrets(err) });
+        }
+      } catch (err) {
+        warnings.push(`Página ${page.name ?? page.id}: ${redactSecrets(err).slice(0, 180)}`);
       }
     }
-
-    // já deixa o painel abrir na conta recém-conectada
-    const destino = avisoAssinatura
-      ? `${appUrl}/setup?erro=${encodeURIComponent(
-          `Conta conectada, mas a assinatura dos webhooks falhou (${avisoAssinatura}). Clique em "Reassinar webhooks" no passo 5.`
-        )}`
-      : `${appUrl}/?conectado=1`;
-    const res = NextResponse.redirect(destino);
-    res.cookies.set(ACCOUNT_COOKIE, igUserId, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-    });
+    if (!connected.length) return fail(warnings.join("\n") || "Não foi possível conectar as contas autorizadas.");
+    const res = finish(warnings.length
+      ? `/setup?erro=${encodeURIComponent(`${connected.length} conta(s) conectada(s).\n${warnings.join("\n")}`)}`
+      : `/setup?salvo=${encodeURIComponent(`${connected.length} Instagram(s) conectado(s) via Facebook.`)}`);
+    res.cookies.set(ACCOUNT_COOKIE, connected[0], { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 });
     return res;
   } catch (err) {
-    const cru = err instanceof Error ? err.message : String(err);
-    const d = diagnosticoDaMeta(cru);
-    if (d) {
-      // O endereço que o app usou vai junto: é o valor a colar na Meta, e sem
-      // ele o passo a passo vira adivinhação.
-      return fail(
-        `${d.resumo}\n\nO endereço que este painel está usando é:\n${redirectUri}\n\n` +
-          d.passos.map((p, i) => `${i + 1}. ${p}`).join("\n")
-      );
-    }
-    return fail(cru.slice(0, 200) || "erro desconhecido");
+    return fail(redactSecrets(err).slice(0, 350));
   }
 }

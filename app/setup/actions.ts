@@ -1,5 +1,9 @@
 "use server";
 import { headers } from "next/headers";
+import { cookies } from "next/headers";
+import { isValidSession, SESSION_COOKIE } from "@/lib/auth";
+import { metaCredentials } from "@/lib/meta-config";
+import { encryptionKey, redactSecrets } from "@/lib/secrets";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { updateConfig, listAccounts, getConfig, deleteAccount } from "@/lib/db";
@@ -14,11 +18,16 @@ import {
 import { diagnosticoDaMeta } from "@/lib/meta-erros";
 import { canonicalAppUrl, isEphemeralUrl } from "@/lib/app-url";
 
+async function requireAdmin() {
+  if (!isValidSession((await cookies()).get(SESSION_COOKIE)?.value)) redirect("/entrar");
+}
+
 // Reassina os campos do webhook em todas as contas conectadas (comments e
 // messages no Instagram, feed e messages na página do Facebook). A assinatura
 // já acontece sozinha no OAuth, mas se falhar naquele momento nada chega e o
 // painel fica mudo — este botão conserta sem precisar reconectar tudo.
 export async function reassinarWebhooks(): Promise<void> {
+  await requireAdmin();
   const accounts = await listAccounts();
   let ok = 0;
   const falhas: string[] = [];
@@ -54,6 +63,7 @@ export async function reassinarWebhooks(): Promise<void> {
 // falha, não adianta olhar as outras — o problema é do app inteiro.
 // ============================================================
 export async function testarAcesso(): Promise<void> {
+  await requireAdmin();
   const contas = await listAccounts();
   if (!contas.length) {
     redirect(`/setup?erro=${encodeURIComponent("Conecte uma conta antes de testar o acesso.")}`);
@@ -126,6 +136,7 @@ export async function testarAcesso(): Promise<void> {
 // num diagnóstico específico e acionável.
 // ============================================================
 export async function testarWebhook(): Promise<void> {
+  await requireAdmin();
   const config = await getConfig();
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
@@ -205,6 +216,7 @@ export async function testarWebhook(): Promise<void> {
 // diferentes das credenciais do login do Instagram. Se vierem no formulário,
 // são salvas; senão, usa as já salvas (com fallback nas do login).
 export async function configurarWebhookAuto(formData: FormData): Promise<void> {
+  await requireAdmin();
   const config = await getConfig();
 
   const metaAppId = String(formData.get("meta_app_id") ?? "").trim();
@@ -216,8 +228,9 @@ export async function configurarWebhookAuto(formData: FormData): Promise<void> {
     });
   }
 
-  const appId = metaAppId || config.meta_app_id || config.instagram_app_id;
-  const appSecret = metaAppSecret || config.meta_app_secret || config.instagram_app_secret;
+  const current = metaCredentials(config);
+  const appId = metaAppId || current.appId;
+  const appSecret = metaAppSecret || current.appSecret;
   if (!appId || !appSecret) {
     redirect(
       `/setup?erro=${encodeURIComponent(
@@ -240,6 +253,7 @@ export async function configurarWebhookAuto(formData: FormData): Promise<void> {
       appSecret,
       callbackUrl: `${appUrl}/api/webhook`,
       verifyToken: config.webhook_verify_token ?? "",
+      fields: "comments,messages,messaging_postbacks",
     });
     // As páginas do Facebook são uma assinatura separada (objeto "page"), no
     // mesmo callback. Falhar aqui não invalida a do Instagram, que já passou.
@@ -272,11 +286,16 @@ export async function configurarWebhookAuto(formData: FormData): Promise<void> {
 }
 
 export async function saveMetaCredentials(formData: FormData): Promise<void> {
-  const appId = String(formData.get("instagram_app_id") ?? "").trim();
-  const appSecret = String(formData.get("instagram_app_secret") ?? "").trim();
-  if (!appId || !appSecret) {
-    redirect(`/setup?erro=${encodeURIComponent("Preencha o App ID e a chave secreta.")}`);
+  if (!isValidSession((await cookies()).get(SESSION_COOKIE)?.value)) redirect("/entrar");
+  const config = await getConfig();
+  const appId = String(formData.get("meta_app_id") ?? "").trim();
+  const appSecret = String(formData.get("meta_app_secret") ?? "").trim();
+  const current = metaCredentials(config);
+  if (!/^\d+$/.test(appId) || (!appSecret && (!current.appSecret || appId !== current.appId))) {
+    redirect(`/setup?erro=${encodeURIComponent("Preencha o App ID principal e a chave secreta. Ao trocar o ID, informe a chave correspondente.")}`);
   }
+  try { encryptionKey(); }
+  catch (err) { redirect(`/setup?erro=${encodeURIComponent(redactSecrets(err))}`); }
 
   // Captura a URL pública do app. Só grava se for um endereço ESTÁVEL: gravar
   // uma URL de deployment da Vercel quebra o webhook e o OAuth no deploy
@@ -288,8 +307,8 @@ export async function saveMetaCredentials(formData: FormData): Promise<void> {
   const appUrl = canonicalAppUrl(null, origem);
 
   await updateConfig({
-    instagram_app_id: appId,
-    instagram_app_secret: appSecret,
+    meta_app_id: appId,
+    ...(appSecret ? { meta_app_secret: appSecret } : {}),
     ...(appUrl && !isEphemeralUrl(appUrl) ? { app_url: appUrl } : {}),
   });
   revalidatePath("/setup");
@@ -301,6 +320,7 @@ export async function saveMetaCredentials(formData: FormData): Promise<void> {
 // contatos, fila e eventos). Exige confirmar o @ digitado: é destrutivo e
 // irreversível, então um clique acidental não pode levar os dados junto.
 export async function removerConta(formData: FormData): Promise<void> {
+  await requireAdmin();
   const igUserId = String(formData.get("ig_user_id") ?? "").trim();
   const confirmacao = String(formData.get("confirmacao") ?? "").trim().replace(/^@/, "");
   if (!igUserId) return;

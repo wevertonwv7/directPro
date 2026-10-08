@@ -34,6 +34,9 @@ import {
 } from "./flow";
 import { scheduleTick } from "./qstash";
 import { renderVariables, type VariableContext } from "./variables";
+import { deliverOnce, UncertainDeliveryError } from "./delivery";
+import { commentTimestamp } from "./ig-facebook";
+import { redactSecrets } from "./secrets";
 
 // ============================================================
 // Recepção: transforma eventos do webhook em itens na fila
@@ -65,15 +68,16 @@ export async function logEvent(accountId: string | null, type: string, payload: 
   await sql().query(`insert into events (account_id, type, payload) values ($1, $2, $3)`, [
     accountId,
     type,
-    JSON.stringify(payload),
+    JSON.stringify(payload, (key, value) => {
+      if (/^(access_token|client_secret|app_secret|fb_exchange_token)$/i.test(key)) return "[redacted]";
+      return typeof value === "string" ? redactSecrets(value) : value;
+    }),
   ]);
 }
 
 // A Meta manda o id da conta que recebeu o evento em entry.id — é ele que diz
-// qual das contas conectadas deve responder (no Facebook, o id da página). Se
-// não bater (id em formato inesperado) e só existir uma conta DAQUELA
-// plataforma, ela assume: o palpite só é seguro dentro da mesma plataforma,
-// senão um evento de página cairia numa conta do Instagram.
+// qual das contas conectadas deve responder (no Facebook, o id da página).
+// Um ID desconhecido não autoriza encaminhar o evento para outra conta.
 async function resolveAccount(
   entryId: string | undefined,
   platform: Platform
@@ -84,7 +88,8 @@ async function resolveAccount(
     const found = accounts.find((a) => a.ig_user_id === entryId);
     if (found) return found;
   }
-  return accounts.length === 1 ? accounts[0] : null;
+  // IDs desconhecidos não podem ser atribuídos à única conta do painel.
+  return null;
 }
 
 async function activeAutomations(accountId: string): Promise<Automation[]> {
@@ -137,7 +142,8 @@ async function enqueue(item: {
       item.automation_id ?? null,
       item.comment_id ?? null,
       JSON.stringify(item.payload),
-      item.dedupe_key,
+      item.kind === "private_reply" && item.comment_id
+        ? `pr:${item.account_id}:${item.comment_id}` : item.dedupe_key,
       notBefore.toISOString(),
     ]
   )) as { id: string }[];
@@ -169,7 +175,7 @@ async function upsertContact(
        username = coalesce(excluded.username, contacts.username),
        name = coalesce(excluded.name, contacts.name),
        profile_pic = coalesce(excluded.profile_pic, contacts.profile_pic),
-       last_reply_at = coalesce(excluded.last_reply_at, contacts.last_reply_at),
+       last_reply_at = greatest(excluded.last_reply_at, contacts.last_reply_at),
        last_automation_id = coalesce(excluded.last_automation_id, contacts.last_automation_id)`,
     [
       accountId,
@@ -682,6 +688,16 @@ async function fluxoTratouMensagem(
   const run = await posicaoAtual(account.ig_user_id, contactId);
   if (!run) return false;
 
+  if (run.awaiting === "button" && account.auth_provider === "facebook_login") {
+    const flow = await carregarFluxo(account.ig_user_id, run.flow_id);
+    if (!flow) return false;
+    const node = acharNo(grafoDoFluxo(flow), run.node_id);
+    const buttons = node?.buttons ?? [];
+    const index = buttons.findIndex((button, i) => text.trim() === String(i + 1) || matches(text, [button.label], "exact"));
+    if (index >= 0) await seguirBotaoDeFluxo(account, `FLOW:${flow.id}:${run.node_id}:${index}`, contactId, origem);
+    return true;
+  }
+
   if (run.awaiting === "email") {
     const email = extractEmail(text);
     if (!email) {
@@ -917,7 +933,8 @@ export async function handleMessagingEvent(
 
   // Qualquer mensagem recebida abre/renova a janela de 24h
   const profile = await fetchProfileFields(account, senderId);
-  await upsertContact(account.ig_user_id, senderId, { ...profile, last_reply_at: new Date() });
+  const timestamp = ev.timestamp && ev.timestamp > 0 && ev.timestamp <= Date.now() ? new Date(ev.timestamp) : undefined;
+  await upsertContact(account.ig_user_id, senderId, { ...profile, last_reply_at: timestamp });
 
   const origem = msg.mid ?? `${senderId}:${Date.now()}`;
 
@@ -1049,7 +1066,8 @@ export async function handleMessagingEvent(
     automations.some((a) => a.id === lastAuto) &&
     (await shouldFallbackFollowup(account.ig_user_id, lastAuto, senderId))
   ) {
-    await enqueueFollowups(account.ig_user_id, lastAuto, senderId);
+    const previous = await loadAutomation(account.ig_user_id, lastAuto);
+    if (previous) await advanceFlow(account, previous, senderId);
   }
 }
 
@@ -1116,6 +1134,13 @@ async function variableContext(
 
 async function processItem(item: QueueItem, account: Account): Promise<"sent" | "skipped"> {
   const igUserId = account.ig_user_id;
+  const deliveryKey = item.kind === "private_reply"
+    ? `private:${igUserId}:${item.comment_id}` : `queue:${item.id}:message`;
+  const deliveries = await sql().query(`select status from outbound_deliveries where delivery_key = $1`, [deliveryKey]) as { status: string }[];
+  if (deliveries[0]?.status === "sent") return "sent";
+  if (account.token_expires_at && new Date(account.token_expires_at).getTime() <= Date.now()) {
+    throw new GraphError(401, JSON.stringify({ error: { code: 190, message: "Token/acesso expirado. Reconecte a conta no /setup." } }));
+  }
   const p = item.payload as {
     text?: string;
     quick_reply_label?: string;
@@ -1148,27 +1173,9 @@ async function processItem(item: QueueItem, account: Account): Promise<"sent" | 
     return "sent";
   }
 
-  // Resposta pública: só na PRIMEIRA tentativa.
-  //
-  // attempts é incrementado na hora de reivindicar o item, então attempts > 1
-  // significa que já houve uma investida antes — ou porque a anterior falhou
-  // de um jeito que não diz se saiu (rede caiu, tempo esgotou), ou porque o
-  // item ficou preso em "sending" e foi recuperado depois de 3 minutos. Nos
-  // dois casos a Meta pode muito bem ter publicado a resposta.
-  //
-  // Para uma DM, repetir é melhor do que não entregar. Para um comentário
-  // público, é o contrário: aparece duas vezes para todo mundo ver. Então
-  // aqui a escolha é entregar no máximo uma vez.
+  // Reserva durável por efeito: falha de rede não repete o comentário.
   if (item.kind === "comment_reply") {
-    if (item.attempts > 1) {
-      await logEvent(igUserId, "comment_reply_nao_repetida", {
-        queue_id: item.id,
-        comment_id: item.comment_id,
-        tentativas: item.attempts,
-      });
-      return "skipped";
-    }
-    await replyToComment(account, item.comment_id!, texto);
+    await deliverOnce(`queue:${item.id}:comment`, () => replyToComment(account, item.comment_id!, texto));
     return "sent";
   }
 
@@ -1187,6 +1194,18 @@ async function processItem(item: QueueItem, account: Account): Promise<"sent" | 
 
   let recipient: { comment_id: string } | { id: string };
   if (item.kind === "private_reply") {
+    const previous = await sql().query(
+      `select 1 from queue where account_id = $1 and comment_id = $2 and kind = 'private_reply' and status = 'sent' and id <> $3 limit 1`,
+      [igUserId, item.comment_id, item.id]
+    ) as unknown[];
+    if (previous.length) return "skipped";
+    if (account.auth_provider === "facebook_login") {
+      const createdAt = await commentTimestamp(item.comment_id!, account.access_token);
+      if (Date.now() - createdAt >= 7 * 86_400_000) {
+        await logEvent(igUserId, "private_reply_expired", { comment_id: item.comment_id });
+        return "skipped";
+      }
+    }
     recipient = { comment_id: item.comment_id! };
   } else {
     // DMs comuns só dentro da janela de 24h — regra da Meta
@@ -1208,7 +1227,7 @@ async function processItem(item: QueueItem, account: Account): Promise<"sent" | 
   const midia = normalizarMidia(p.media?.kind, p.media?.url);
   if (midia && !("comment_id" in recipient)) {
     try {
-      await sendMessage(account, recipient, mediaMessage(midia.kind, midia.url));
+      await deliverOnce(`queue:${item.id}:media`, () => sendMessage(account, recipient, mediaMessage(midia.kind, midia.url)));
     } catch (err) {
       await logEvent(igUserId, "media_failed", {
         queue_id: item.id,
@@ -1257,13 +1276,23 @@ async function processItem(item: QueueItem, account: Account): Promise<"sent" | 
     message = { text: texto };
   }
 
-  await sendMessage(account, recipient, message);
+  // Private Replies documenta texto; links do primeiro bloco seguem no texto.
+  if (item.kind === "private_reply" && account.auth_provider === "facebook_login") {
+    const links = (p.buttons ?? []).filter((b) => b.url).map((b) => `${b.title || "Link"}: ${b.url}`);
+    const choices = (p.quick_replies ?? []).map((q, i) => `${i + 1}. ${renderVariables(q.title, ctx)}`);
+    const prompt = choices.length ? `Responda com o número ou nome da opção:\n${choices.join("\n")}`
+      : p.quick_reply_label ? `Responda "${rotuloResposta}" para continuar.` : "";
+    message = { text: [texto, ...links, prompt].filter(Boolean).join("\n") };
+  }
+  await deliverOnce(deliveryKey, () => sendMessage(account, recipient, message));
   return "sent";
 }
 
 export async function drainQueue(): Promise<{ sent: number; skipped: number; failed: number }> {
   const result = { sent: 0, skipped: 0, failed: 0 };
   await ensureSchema();
+  const { processWebhookInbox } = await import("./webhook-inbox");
+  await processWebhookInbox();
   const accounts = await listAccounts();
   if (!accounts.length) return result;
   const byId = new Map(accounts.map((a) => [a.ig_user_id, a]));
@@ -1316,16 +1345,16 @@ export async function drainQueue(): Promise<{ sent: number; skipped: number; fai
         result.sent++;
         await sleep(GAP_MS);
       } else {
-        await finish(item.id, { status: "skipped", error: "janela de 24h fechada" });
+        await finish(item.id, { status: "skipped", error: item.kind === "private_reply" ? "resposta privada expirada ou já enviada" : "janela de 24h fechada" });
         result.skipped++;
       }
     } catch (err) {
-      const permanent = err instanceof GraphError && err.status >= 400 && err.status < 500;
+      const permanent = err instanceof UncertainDeliveryError || (err instanceof GraphError && !err.retryable);
       const giveUp = permanent || item.attempts >= 3;
       await finish(item.id, {
         status: giveUp ? "failed" : "pending",
         not_before: new Date(Date.now() + 2 * 60_000),
-        error: err instanceof Error ? err.message.slice(0, 500) : String(err),
+        error: redactSecrets(err).slice(0, 500),
       });
       result.failed++;
     }

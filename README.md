@@ -9,7 +9,8 @@ seu link. Sua própria central de DMs, rodando de graça, para sempre, na sua co
 1. Alguém comenta a palavra-chave (ex.: `quero`) no seu post.
 2. O app responde no privado na hora (essa resposta **fura a janela de 24h** — é permitida 1 vez
    por comentário, em até 7 dias) e, se você quiser, também responde publicamente no comentário.
-3. A pessoa toca no botão de resposta rápida → isso **abre a janela de 24h** da Meta.
+3. A pessoa responde à mensagem → isso **abre a janela de 24h** da Meta. No Facebook Login,
+   a primeira resposta privada apresenta as opções em texto.
 4. O app manda a DM com o seu link (botão clicável) e, opcionalmente, um lembrete depois de X
    minutos.
 
@@ -24,6 +25,7 @@ funciona com resposta a story e DM recebida com palavra-chave.
 | Conta **Vercel** (entre com o GitHub) | hospedar o app + banco de dados |
 | Conta **Meta for Developers** (conta do Facebook) | criar o app da API do Instagram |
 | Instagram **Profissional** (Comercial ou Criador) | a API só funciona nesse tipo de conta |
+| Página do Facebook vinculada ao Instagram | autenticação pela API com Facebook Login |
 
 > Sua conta é pessoal? Instagram → Configurações → Central de contas → Tipo de conta → **Mudar
 > para conta profissional**. Leva 1 minuto e é reversível.
@@ -53,7 +55,9 @@ funciona com resposta a story e DM recebida com palavra-chave.
 1. Acesse [vercel.com/new](https://vercel.com/new) e entre com o GitHub.
 2. Em **Import Git Repository**, importe o `many`.
 3. Antes de concluir, abra **Environment Variables** e adicione `ADMIN_PASSWORD` = a senha que
-   você quer para o seu painel. Clique em **Deploy**.
+   você quer para o seu painel. Configure também `APP_URL` e `CREDENTIALS_ENCRYPTION_KEY`
+   conforme [.env.example](.env.example) e [o guia da integração](docs/INSTAGRAM-FACEBOOK-LOGIN.md).
+   Clique em **Deploy**.
 4. Depois do deploy: aba **Storage** → **Create Database** → **Neon** → plano Free → **Create**
    → **Connect** ao projeto (pode deixar tudo como está nas opções).
 5. Aba **Deployments** → menu **⋯** do deploy mais recente → **Redeploy** (isso ativa o banco —
@@ -62,17 +66,19 @@ funciona com resposta a story e DM recebida com palavra-chave.
 ### Parte 3 — Conectar o Instagram (assistente guiado)
 
 Abra `https://SEU-APP.vercel.app`, entre com a sua senha e clique em **Configuração**. O
-assistente mostra os 5 passos com botões de copiar — é a parte da Meta, a única manual:
+assistente mostra os passos com botões de copiar. Esta versão usa **Instagram API com Facebook
+Login**; veja [configuração, permissões e diagnóstico](docs/INSTAGRAM-FACEBOOK-LOGIN.md).
 
 1. Criar o app em
    [developers.facebook.com/apps/creation](https://developers.facebook.com/apps/creation/)
    (caso de uso **"Gerencie mensagens e conteúdo no Instagram"**).
-2. Copiar o **ID do app do Instagram** e a **chave secreta** para o assistente.
+2. Copiar o **ID e segredo do app principal Meta**, em Configurações do app → Básico.
 3. Cadastrar na Meta as URLs que o assistente mostra (webhook + token de verificação + URI de
-   redirecionamento OAuth) e assinar os campos **comments** e **messages**.
-4. Adicionar sua conta como **Testador do Instagram** e aceitar o convite no celular.
+   redirecionamento OAuth) e assinar **comments**, **messages** e **messaging_postbacks**.
+4. Vincular o Instagram profissional a uma Página e autorizar com um usuário que tenha acesso.
 5. Cadastrar as URLs de privacidade (o app já serve as páginas) em Configurações → Básico e
-   colocar o app **Ao vivo** — ⚠️ em modo desenvolvimento o webhook não entrega eventos.
+   concluir as aprovações de acesso necessárias para usuários externos. Publicar o app sozinho
+   não substitui App Review, Advanced Access e verificação empresarial exigidos pela Meta.
 6. Clicar em **Conectar Instagram** no assistente e autorizar. Pronto.
 
 ### Parte 4 — Criar a primeira automação
@@ -160,7 +166,8 @@ no cron diário.
 - **Disparo em massa para base fria é proibido** pela Meta e derruba a conta. Este app só
   responde a quem interagiu (comentário/story/DM) — e é por isso que ele é seguro.
 - Limites de envio conservadores embutidos: ~1,6 mensagens/segundo e ~190/hora.
-- O token da Meta dura 60 dias e **se renova sozinho** (cron diário).
+- Tokens e acesso aos dados podem expirar ou ser revogados. Contas com Facebook Login devem
+  ser reconectadas quando necessário; não usam a renovação do antigo Instagram Login.
 
 ## Arquitetura (para quem é técnico)
 
@@ -171,12 +178,13 @@ no cron diário.
   passa tudo por `normalizarGrafo` — o mesmo funil do editor, porque arquivo que veio de fora
   não é dado confiável.
 - **Postgres (Neon)** via marketplace da Vercel; schema criado automaticamente no primeiro
-  acesso (`lib/db.ts`). Fila com trava atômica (`FOR UPDATE SKIP LOCKED`) — nunca envia em dobro.
+  acesso (`lib/db.ts`). Fila com trava atômica (`FOR UPDATE SKIP LOCKED`) e registro de envios.
+  Envios com confirmação incerta exigem conferência manual, evitando repetição automática.
 - **Motor orientado a eventos**: o webhook valida a assinatura HMAC, enfileira e drena a fila na
   mesma requisição (`after()`). **QStash** (opcional) acorda o app na hora dos lembretes. **Cron
   diário** renova o token e faz drenagem de segurança.
-- Credenciais da Meta ficam no banco (via `/setup`) — nada de variável de ambiente depois do
-  deploy.
+- Credenciais da Meta ficam cifradas no banco (via `/setup`); a chave de criptografia fica no
+  servidor. O webhook persiste os eventos antes de confirmar o recebimento.
 
 ## Licença
 

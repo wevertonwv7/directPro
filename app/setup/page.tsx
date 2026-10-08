@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { getConfig, isMetaConfigured, listAccounts, sql, type Account } from "@/lib/db";
 import { qstashEnabled } from "@/lib/qstash";
 import { saveMetaCredentials, testarWebhook, testarAcesso, removerConta } from "./actions";
+import { metaCredentials } from "@/lib/meta-config";
 import { canonicalAppUrl, isEphemeralUrl } from "@/lib/app-url";
 import { Suspense } from "react";
 import SubscriptionStatus, { SubscriptionStatusSkeleton } from "./subscription-status";
@@ -10,7 +11,7 @@ import SubmitButton from "./submit-button";
 import { IconAlert } from "../icons";
 import Avatar from "../avatar";
 import { fmtDate } from "@/lib/format";
-import { card, input, muted, btnPrimary, alertError, alertOk, link } from "../ui";
+import { card, input, muted, btnPrimary, alertError, alertOk } from "../ui";
 
 export const dynamic = "force-dynamic";
 
@@ -88,15 +89,14 @@ function ContaConectada({ a }: { a: Account }) {
           {facebook ? nome : `@${nome}`}
         </p>
         <p className="truncate text-xs text-zinc-500">
+          {a.facebook_page_name && <span>Página: {a.facebook_page_name} · </span>}
           ID:{" "}
           <code className="select-all font-mono text-zinc-600 dark:text-zinc-300">
             {a.ig_user_id}
           </code>
         </p>
         <p className="text-xs text-zinc-500">
-          {facebook
-            ? "Token da página — não expira"
-            : `Token válido até ${fmtDate(a.token_expires_at)}`}
+          {a.token_expires_at ? `Token/acesso válido até ${fmtDate(a.token_expires_at)}` : "Sem expiração informada; o acesso pode ser revogado"}
         </p>
       </div>
 
@@ -154,10 +154,11 @@ export default async function SetupPage({
   const urlInstavel = isEphemeralUrl(appUrl) || isEphemeralUrl(origemAtual);
 
   const metaOk = isMetaConfigured(config);
+  const credentials = metaCredentials(config);
   const accounts = await listAccounts();
-  const connected = accounts.length > 0;
+  const connected = accounts.some((a) => a.platform === "instagram");
   const contasInstagram = accounts.filter((a) => a.platform === "instagram");
-  const eventRows = (await sql()`select count(*)::int as n from events`) as { n: number }[];
+  const eventRows = (await sql()`select count(*)::int as n from events where type in ('comment','message','quick_reply','story_reply')`) as { n: number }[];
   const hasEvents = (eventRows[0]?.n ?? 0) > 0;
 
   const inputCls = input;
@@ -241,12 +242,11 @@ export default async function SetupPage({
             <i>Minha Automação</i>.
           </li>
           <li>
-            Na tela de produtos, adicione <b>Instagram</b> e escolha{" "}
-            <b>&quot;Configuração da API com login do Instagram&quot;</b>.
+            Em <b>Casos de uso</b>, selecione <b>Gerenciar mensagens e conteúdo no Instagram</b> e personalize{" "}
+            <b>&quot;Configuração da API com login do Facebook&quot;</b>.
           </li>
           <li>
-            No menu lateral: <b>Instagram → Configuração da API com login do Instagram</b>. Aí
-            estão o <b>ID do app do Instagram</b> e a <b>chave secreta do app do Instagram</b> —
+            Em <b>Configurações do app → Básico</b>, copie o <b>ID do app</b> e a <b>chave secreta do app</b> —
             copie os dois para o passo 2.
           </li>
         </ol>
@@ -258,16 +258,16 @@ export default async function SetupPage({
         done={metaOk}
         obrigatorio
         subtitle="Conecta este sistema ao app que você acabou de criar."
-        ondeFica="No app da Meta: Instagram → Configuração da API com login do Instagram"
+        ondeFica="Configurações do app → Básico"
       >
         <form action={saveMetaCredentials} className="space-y-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-zinc-400">
-              ID do app do Instagram
+              ID do app principal da Meta
             </label>
             <input
-              name="instagram_app_id"
-              defaultValue={config.instagram_app_id ?? ""}
+              name="meta_app_id"
+              defaultValue={credentials.appId}
               required
               className={inputCls}
               placeholder="1234567890123456"
@@ -275,15 +275,15 @@ export default async function SetupPage({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-zinc-400">
-              Chave secreta do app do Instagram
+              Chave secreta do app principal da Meta
             </label>
             <input
-              name="instagram_app_secret"
+              name="meta_app_secret"
               type="password"
-              defaultValue={config.instagram_app_secret ?? ""}
-              required
+              autoComplete="new-password"
+              required={!credentials.appSecret}
               className={inputCls}
-              placeholder="••••••••••••••••"
+              placeholder={credentials.appSecret ? "Já configurada; deixe vazio para manter" : "Chave secreta do app"}
             />
           </div>
           <SubmitButton className={btnPrimary} pendingLabel="Salvando…">
@@ -298,7 +298,7 @@ export default async function SetupPage({
         done={connected}
         obrigatorio
         subtitle="Sem isto, o botão de conectar dá erro de “Invalid redirect_uri”."
-        ondeFica="Instagram → Configuração da API → Configurações do login da empresa → URIs de redirecionamento do OAuth"
+        ondeFica="Login do Facebook para Empresas → Configurações → URIs de redirecionamento de OAuth válidos"
       >
         <p>
           Cole o endereço abaixo <b>exatamente como está</b> e salve. Ele precisa bater caractere
@@ -306,8 +306,7 @@ export default async function SetupPage({
         </p>
         <CopyField label="URI de redirecionamento OAuth" value={`${appUrl}/api/oauth/callback`} />
         <p className={`text-xs ${muted}`}>
-          Se você acessa este painel por mais de um endereço, cadastre todos eles na Meta — o que
-          vale é o endereço pelo qual você clica em “Conectar”.
+          Use o domínio de produção mostrado acima para entrar no painel e iniciar a conexão. O callback e os cookies precisam usar esse mesmo domínio.
         </p>
       </Step>
 
@@ -317,7 +316,7 @@ export default async function SetupPage({
         done={hasEvents}
         obrigatorio
         subtitle="É o que faz os comentários e DMs chegarem até aqui em tempo real."
-        ondeFica="Instagram → Configuração da API → Configurar webhooks"
+        ondeFica="Casos de uso → Instagram com login do Facebook → Webhooks"
       >
         <p>
           <b>Teste primeiro, salve depois.</b> O botão abaixo faz a mesma chamada que a Meta faz —
@@ -350,7 +349,7 @@ export default async function SetupPage({
           <div className="mt-2 space-y-2">
             <p>
               Depois de salvar o webhook, clique em <b>Gerenciar</b> e assine os campos{" "}
-              <b>comments</b> e <b>messages</b>.
+              <b>comments</b>, <b>messages</b> e <b>messaging_postbacks</b>.
             </p>
           </div>
         </details>
@@ -358,62 +357,19 @@ export default async function SetupPage({
 
       <Step
         number={5}
-        title="Publicar o app e liberar sua conta"
+        title="Publicar o app e liberar as permissões"
         done={hasEvents}
         obrigatorio
-        subtitle="A Meta só entrega eventos para apps publicados e contas autorizadas."
-        ondeFica="Configurações do app → Básico  ·  Funções do app → Testadores"
+        subtitle="Publicar o app e obter acesso avançado são etapas separadas."
+        ondeFica="Casos de uso → Permissões e recursos · Configurações do app → Básico"
       >
-        <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
-          <IconAlert className="mr-1 inline h-3.5 w-3.5 align-[-2px]" />
-          Este é o passo que mais gente esquece — e sem ele o webhook fica configurado, mas{" "}
-          <b>nenhum evento chega</b>.
-        </p>
-        <p className="font-medium text-zinc-800 dark:text-zinc-200">
-          a. Cadastre as duas URLs abaixo em <b>Configurações do app → Básico</b> (a Meta exige
-          para publicar):
-        </p>
-        <CopyField label="URL da Política de Privacidade" value={`${appUrl}/privacidade`} />
-        <CopyField label="URL de Exclusão de Dados" value={`${appUrl}/exclusao-de-dados`} />
-        <p className="font-medium text-zinc-800 dark:text-zinc-200">
-          b. Coloque o app <b>Ao vivo</b> (chave no topo do painel da Meta).
-        </p>
-        <p className="font-medium text-zinc-800 dark:text-zinc-200">
-          c. Adicione sua conta como <b>Testador do Instagram</b> em <b>Funções do app</b>.
-        </p>
-        <p className="font-medium text-zinc-800 dark:text-zinc-200">
-          d. Aceite o convite <b>pelo navegador, no computador</b>:
-        </p>
-        <ol className="list-decimal space-y-1 pl-5 text-sm">
-          <li>
-            Abra{" "}
-            <a
-              href="https://www.instagram.com/accounts/manage_access/"
-              target="_blank"
-              rel="noreferrer"
-              className={link}
-            >
-              instagram.com/accounts/manage_access
-            </a>{" "}
-            e entre com a conta que você adicionou como testadora.
-          </li>
-          <li>
-            Vá em <b>Apps e sites</b> → aba <b>Convites de testador</b>.
-          </li>
-          <li>
-            Clique em <b>Aceitar</b> no convite do seu app.
-          </li>
-        </ol>
-        <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
-          <IconAlert className="mr-1 inline h-3.5 w-3.5 align-[-2px]" />
-          O convite <b>não aparece no aplicativo do Instagram no celular</b> — só na versão web. Se
-          você procurou no app e não achou, é por isso: faça pelo navegador, no computador.
-        </p>
-        <p className={`text-xs ${muted}`}>
-          Como conferir: no painel da Meta, a conta precisa aparecer com a chave{" "}
-          <b>Assinatura do webhook</b> ligada (verde). Se estiver “Desativado”, os eventos daquela
-          conta não são enviados.
-        </p>
+        <p>Cadastre as URLs abaixo em <b>Configurações do app → Básico</b>:</p>
+        <CopyField label="URL da Política de Privacidade" value={appUrl + "/privacidade"} />
+        <CopyField label="URL de Exclusão de Dados" value={appUrl + "/exclusao-de-dados"} />
+        <p>Publique o app e confira as permissões <code>instagram_basic</code>, <code>instagram_manage_comments</code>, <code>pages_show_list</code>, <code>pages_read_engagement</code> e <code>pages_manage_metadata</code>. As conversas e respostas posteriores usam também <code>instagram_manage_messages</code>.</p>
+        <p>O acesso de produção depende de <b>App Review, Advanced Access e verificação da empresa</b>. Os webhooks de comentários exigem Advanced Access. Ter o app publicado não confirma que essas aprovações foram concedidas.</p>
+        <p>Para os testes permitidos pela Meta, use uma conta com função no app e acesso à Página vinculada. O Instagram precisa ser <b>profissional e público</b>, conectado à Página, e o usuário do Facebook precisa ter as tarefas adequadas de mensagens/moderação.</p>
+        <p className={muted}>Se o painel exigir uma configuração de Login do Facebook para Empresas, crie-a com token de usuário e essas permissões e configure FACEBOOK_LOGIN_CONFIG_ID no servidor.</p>
       </Step>
 
       <Step
@@ -427,7 +383,7 @@ export default async function SetupPage({
           <>
             <p>
               {contasInstagram.length === 1
-                ? "Conta conectada ✓ — os webhooks foram assinados automaticamente."
+                ? "Conta conectada ✓ — confira o resultado da assinatura de webhooks abaixo."
                 : `${contasInstagram.length} contas conectadas ✓ — cada uma tem suas próprias automações e contatos.`}
             </p>
             <ul className="space-y-2">
@@ -438,8 +394,7 @@ export default async function SetupPage({
           </>
         ) : (
           <p>
-            Sua conta precisa ser <b>Profissional</b> (Comercial ou Criador). Clique para
-            autorizar:
+            Sua conta precisa ser <b>Profissional</b> (Comercial ou Criador) e estar vinculada a uma <b>Página do Facebook</b>. Autorize essa Página no Facebook:
           </p>
         )}
         <a
@@ -455,9 +410,7 @@ export default async function SetupPage({
         {!metaOk && <p className="text-xs text-zinc-500">Complete os passos 1 e 2 antes.</p>}
         {contasInstagram.length > 0 && (
           <p className={`text-xs ${muted}`}>
-            Cada conta extra precisa ser adicionada como <b>Testador do Instagram</b> no seu app
-            da Meta e aceitar o convite <b>pelo navegador, no computador</b> (etapa 5) antes de
-            autorizar aqui.
+            A conexão salva os Instagrams vinculados às Páginas autorizadas. Confira cada conta na lista. Para revogar o acesso, remova a integração nas configurações do Facebook.
           </p>
         )}
 
@@ -507,7 +460,7 @@ export default async function SetupPage({
         </ol>
         {hasEvents ? (
           <p className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-            Já recebemos eventos da Meta ✓ — a integração está funcionando.
+            Recebemos eventos da Meta ✓. Confira na fila e na conversa se a resposta privada foi entregue.
           </p>
         ) : (
           <p className={`text-xs ${muted}`}>
@@ -543,7 +496,7 @@ export default async function SetupPage({
               ok: hasEvents,
               label: "Eventos chegando da Meta",
               falta:
-                "Confira as etapas 4 e 5 (webhook validado, app publicado e conta como testadora).",
+                "Confira as etapas 4 e 5 (webhook validado, app publicado e permissões e acesso avançado).",
             },
           ].map((item) => (
             <li key={item.label} className="flex items-start gap-2 text-sm">
@@ -595,7 +548,7 @@ export default async function SetupPage({
             Diagnóstico das contas
           </h3>
           <p className={`mb-3 text-xs ${muted}`}>
-            Cada conta precisa estar assinando <b>comments</b> e <b>messages</b>. Se alguma
+            Cada conta precisa estar assinando <b>comments</b>, <b>messages</b> e <b>messaging_postbacks</b>. Se alguma
             estiver fora, nada chega no painel — e o botão abaixo religa sem reconectar.
           </p>
           <Suspense fallback={<SubscriptionStatusSkeleton />}>

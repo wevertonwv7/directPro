@@ -1,19 +1,27 @@
 import "server-only";
+import { redactSecrets } from "./secrets";
 
 // Base comum das duas APIs da Meta (Instagram e Facebook). O que muda entre
 // elas é o host e os endpoints; o tratamento de erro é o mesmo — e precisa ser,
 // porque o motor da fila decide o que é falha permanente (4xx, não adianta
 // tentar de novo) olhando para este erro.
 
-export const API_VERSION = "v25.0";
+export const API_VERSION = "v26.0";
 
 export class GraphError extends Error {
   status: number;
   body: string;
+  retryable: boolean;
+  rejected: boolean;
   constructor(status: number, body: string, api = "Meta") {
-    super(`${api} API ${status}: ${body}`);
+    const safe = redactSecrets(body);
+    super(`${api} API ${status}: ${safe}`);
     this.status = status;
-    this.body = body;
+    this.body = safe;
+    let error: { is_transient?: boolean; code?: number } | undefined;
+    try { error = JSON.parse(body).error; } catch {}
+    this.rejected = Boolean(error);
+    this.retryable = Boolean(error && (status === 429 || error.is_transient || [4, 17, 32, 613].includes(error.code ?? 0)));
   }
 }
 
@@ -26,7 +34,7 @@ export async function graphRequest(
   init: RequestInit | undefined,
   ErrorClass: new (status: number, body: string) => GraphError
 ): Promise<Json> {
-  const res = await fetch(url, init);
+  const res = await fetch(url, { ...init, cache: "no-store", signal: init?.signal ?? AbortSignal.timeout(20_000) });
   const text = await res.text();
   if (!res.ok) throw new ErrorClass(res.status, text);
   return text ? (JSON.parse(text) as Json) : {};

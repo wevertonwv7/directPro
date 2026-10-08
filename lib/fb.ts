@@ -17,8 +17,8 @@ import {
 //   as credenciais do "login do Instagram" não valem aqui;
 // - quem responde não é o usuário, é a PÁGINA: cada página tem seu próprio
 //   token, tirado do token do usuário;
-// - o token da página não expira (quando vem de um token longo de usuário),
-//   então não existe renovação diária como no Instagram;
+// - o token da página pode não ter expiração nominal, mas o acesso aos dados
+//   expira e permissões podem ser revogadas; confira debug_token;
 // - o webhook é do objeto "page", com os campos feed (comentários) e messages.
 // ============================================================
 
@@ -50,6 +50,23 @@ export const FB_SCOPES = [
   "pages_manage_metadata",
   "pages_messaging",
 ];
+
+// Fluxo Instagram via Página: não solicita permissões de publicação/ads/Messenger.
+export const INSTAGRAM_FB_SCOPES = [
+  "pages_show_list", "pages_read_engagement", "pages_manage_metadata",
+  "instagram_basic", "instagram_manage_comments", "instagram_manage_messages",
+];
+
+export function instagramAuthorizeUrl(appId: string, redirectUri: string, state: string, configId = ""): string {
+  const p = new URLSearchParams({ client_id: appId, redirect_uri: redirectUri, response_type: "code", state });
+  if (configId) {
+    p.set("config_id", configId);
+    p.set("override_default_response_type", "true");
+  } else {
+    p.set("scope", INSTAGRAM_FB_SCOPES.join(","));
+  }
+  return `${FB_DIALOG}/${API_VERSION}/dialog/oauth?${p}`;
+}
 
 export function authorizeUrl(appId: string, redirectUri: string, state: string): string {
   const p = new URLSearchParams({
@@ -101,7 +118,42 @@ export type FbPage = {
   username?: string;
   access_token: string;
   picture?: { data?: { url?: string } };
+  tasks?: string[];
+  instagram_business_account?: { id: string; username?: string; name?: string; profile_picture_url?: string };
 };
+
+export async function listInstagramPages(userToken: string): Promise<FbPage[]> {
+  const pages: FbPage[] = [];
+  let after: string | null = null;
+  const seen = new Set<string>();
+  do {
+    const p = new URLSearchParams({
+      fields: "id,name,access_token,tasks,instagram_business_account{id,username,name,profile_picture_url}", limit: "100",
+    });
+    if (after) p.set("after", after);
+    const result = await fbFetch(`/me/accounts?${p}`, { headers: { Authorization: `Bearer ${userToken}` } });
+    pages.push(...((result.data as FbPage[]) ?? []));
+    after = nextCursor(result);
+    if (after && seen.has(after)) throw new Error("A Meta repetiu o cursor de páginas. Tente conectar novamente.");
+    if (after) seen.add(after);
+  } while (after);
+  return pages;
+}
+
+export async function tokenExpiration(token: string, appId: string, appSecret: string): Promise<Date | null> {
+  const p = new URLSearchParams({ input_token: token });
+  const result = await fbFetch(`/debug_token?${p}`, { headers: { Authorization: `Bearer ${appId}|${appSecret}` } });
+  const data = result.data as { is_valid?: boolean; app_id?: string; expires_at?: number; data_access_expires_at?: number } | undefined;
+  if (!data?.is_valid || String(data.app_id) !== appId) throw new Error("Token de página inválido ou emitido para outro app.");
+  const expiry = [data.expires_at, data.data_access_expires_at].filter((n): n is number => Boolean(n && n > 0));
+  return expiry.length ? new Date(Math.min(...expiry) * 1000) : null;
+}
+
+export async function grantedPermissions(token: string): Promise<string[]> {
+  const result = await fbFetch("/me/permissions", { headers: { Authorization: `Bearer ${token}` } });
+  return ((result.data as { permission: string; status: string }[]) ?? [])
+    .filter((p) => p.status === "granted").map((p) => p.permission);
+}
 
 // Páginas que a pessoa autorizou na tela da Meta (ela escolhe quais).
 export async function listPages(userToken: string): Promise<FbPage[]> {

@@ -4,6 +4,12 @@ import { salvarFotoDaConta } from "./db";
 import type { OutgoingMessage, Recipient } from "./graph";
 import * as ig from "./ig";
 import * as fb from "./fb";
+import * as igFacebook from "./ig-facebook";
+
+function instagramApi(account: Account) {
+  if (account.auth_provider !== "facebook_login") return ig;
+  return { ...igFacebook, getProfile: (token: string) => igFacebook.getProfile(account.ig_user_id, token) };
+}
 
 // ============================================================
 // Uma conta, duas plataformas
@@ -60,7 +66,7 @@ export async function listPosts(
     const page = await fb.getPagePosts(account.ig_user_id, account.access_token, limit, after);
     return { media: page.posts.map(fromFbPost), after: page.after };
   }
-  const page = await ig.getMedia(account.ig_user_id, account.access_token, limit, after);
+  const page = await instagramApi(account).getMedia(account.ig_user_id, account.access_token, limit, after);
   return { media: page.media as PickerMedia[], after: page.after };
 }
 
@@ -68,7 +74,7 @@ export async function listPosts(
 // formulário nem oferece o gatilho.
 export async function listStories(account: Account): Promise<PickerMedia[]> {
   if (isFacebook(account)) return [];
-  return (await ig.getStories(account.ig_user_id, account.access_token)) as PickerMedia[];
+  return (await instagramApi(account).getStories(account.ig_user_id, account.access_token)) as PickerMedia[];
 }
 
 // Endereço ATUAL da imagem de um post/story, a partir do id. As URLs da Meta
@@ -82,7 +88,7 @@ export async function findMediaById(account: Account, mediaId: string): Promise<
     };
     return json.full_picture ?? null;
   }
-  const json = (await ig.getMediaById(
+  const json = (await instagramApi(account).getMediaById(
     mediaId,
     account.access_token,
     "thumbnail_url,media_url"
@@ -96,7 +102,7 @@ export async function findMediaById(account: Account, mediaId: string): Promise<
 export async function fotoDaConta(account: Account): Promise<string | null> {
   const url = isFacebook(account)
     ? ((await fb.getPageProfile(account.ig_user_id, account.access_token)).picture ?? null)
-    : ((await ig.getProfile(account.access_token)).profile_picture_url ?? null);
+    : ((await instagramApi(account).getProfile(account.access_token)).profile_picture_url ?? null);
   if (url) await salvarFotoDaConta(account.ig_user_id, url);
   return url;
 }
@@ -185,7 +191,7 @@ export async function sendMessage(
   if (isFacebook(account)) {
     return fb.sendMessage(account.ig_user_id, account.access_token, recipient, message);
   }
-  return ig.sendMessage(account.ig_user_id, account.access_token, recipient, message);
+  return instagramApi(account).sendMessage(account.ig_user_id, account.access_token, recipient, message);
 }
 
 export async function replyToComment(
@@ -194,7 +200,7 @@ export async function replyToComment(
   text: string
 ): Promise<unknown> {
   if (isFacebook(account)) return fb.replyToComment(commentId, account.access_token, text);
-  return ig.replyToComment(commentId, account.access_token, text);
+  return instagramApi(account).replyToComment(commentId, account.access_token, text);
 }
 
 // Reação (coraçãozinho) na mensagem recebida: existe só no Instagram. No
@@ -206,7 +212,7 @@ export async function reactToMessage(
   emoji: string
 ): Promise<boolean> {
   if (isFacebook(account)) return false;
-  await ig.sendReaction(account.ig_user_id, account.access_token, contactId, messageId, emoji);
+  await instagramApi(account).sendReaction(account.ig_user_id, account.access_token, contactId, messageId, emoji);
   return true;
 }
 
@@ -220,7 +226,7 @@ export async function getAccountProfile(
   if (isFacebook(account)) {
     return fb.getPageProfile(account.ig_user_id, account.access_token);
   }
-  return ig.getProfile(account.access_token);
+  return instagramApi(account).getProfile(account.access_token);
 }
 
 export async function getUserProfile(
@@ -228,7 +234,7 @@ export async function getUserProfile(
   userId: string
 ): Promise<{ username?: string; name?: string; profile_pic?: string }> {
   if (isFacebook(account)) return fb.getUserProfile(userId, account.access_token);
-  return ig.getUserProfile(userId, account.access_token);
+  return instagramApi(account).getUserProfile(userId, account.access_token);
 }
 
 // null = não deu para saber (o motor trata como "libera e registra"). No
@@ -239,7 +245,7 @@ export async function followsAccount(
   userId: string
 ): Promise<boolean | null> {
   if (isFacebook(account)) return null;
-  return ig.checkFollowsAccount(userId, account.access_token);
+  return instagramApi(account).checkFollowsAccount(userId, account.access_token);
 }
 
 // ---------- Webhooks ----------
@@ -248,14 +254,15 @@ export async function subscribeWebhooks(account: Account): Promise<unknown> {
   if (isFacebook(account)) {
     return fb.subscribePageToWebhooks(account.ig_user_id, account.access_token);
   }
-  return ig.subscribeToWebhooks(account.ig_user_id, account.access_token);
+  if (account.auth_provider === "facebook_login" && !account.facebook_page_id) throw new Error("Página vinculada ausente; reconecte o Instagram.");
+  return instagramApi(account).subscribeToWebhooks(account.facebook_page_id ?? account.ig_user_id, account.access_token);
 }
 
 export async function subscribedFields(account: Account): Promise<string[] | null> {
   if (isFacebook(account)) {
     return fb.getPageSubscribedFields(account.ig_user_id, account.access_token);
   }
-  return ig.getSubscribedFields(account.ig_user_id, account.access_token);
+  return instagramApi(account).getSubscribedFields(account.facebook_page_id ?? account.ig_user_id, account.access_token);
 }
 
 export { linkMessage, buttonsMessage, mediaMessage } from "./graph";

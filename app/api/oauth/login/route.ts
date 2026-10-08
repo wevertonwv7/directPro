@@ -1,24 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authorizeUrl } from "@/lib/ig";
-import { oauthState } from "@/lib/auth";
-import { getConfig, updateConfig } from "@/lib/db";
-import { canonicalAppUrl, isEphemeralUrl } from "@/lib/app-url";
+import { instagramAuthorizeUrl } from "@/lib/fb";
+import { isValidSession, SESSION_COOKIE } from "@/lib/auth";
+import { getConfig } from "@/lib/db";
+import { canonicalAppUrl } from "@/lib/app-url";
+import { metaCredentials } from "@/lib/meta-config";
+import { createOAuthState, OAUTH_COOKIE, OAUTH_MAX_AGE } from "@/lib/oauth";
+import { encryptionKey, redactSecrets } from "@/lib/secrets";
 
 export async function GET(req: NextRequest) {
-  const config = await getConfig();
-  if (!config.instagram_app_id) {
-    return NextResponse.redirect(
-      `${req.nextUrl.origin}/setup?erro=${encodeURIComponent("Cadastre o App ID no passo 2 antes de conectar.")}`
-    );
+  const session = req.cookies.get(SESSION_COOKIE)?.value;
+  if (!isValidSession(session)) return NextResponse.redirect(new URL("/entrar", req.url));
+  try {
+    const config = await getConfig();
+    const appUrl = canonicalAppUrl(config.app_url, req.nextUrl.origin);
+    if (new URL(appUrl).origin !== req.nextUrl.origin) {
+      return NextResponse.redirect(`${appUrl}/api/oauth/login`);
+    }
+    const { appId, appSecret, configId } = metaCredentials(config);
+    if (!appId || !appSecret) throw new Error("Cadastre as credenciais do app principal da Meta no passo 2.");
+    encryptionKey();
+    const redirectUri = `${appUrl}/api/oauth/callback`;
+    const state = await createOAuthState(session!, redirectUri);
+    const res = NextResponse.redirect(instagramAuthorizeUrl(appId, redirectUri, state, configId));
+    res.cookies.set(OAUTH_COOKIE, state, {
+      httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax",
+      maxAge: OAUTH_MAX_AGE, path: "/api/oauth",
+    });
+    return res;
+  } catch (err) {
+    return NextResponse.redirect(new URL(`/setup?erro=${encodeURIComponent(redactSecrets(err))}`, req.url));
   }
-  // O redirect_uri precisa bater EXATAMENTE com o cadastrado na Meta. Usamos a
-  // URL canônica (estável) em vez da origem do navegador: se o usuário abrir o
-  // painel por uma URL de deployment da Vercel, a origem muda a cada deploy e o
-  // OAuth passa a falhar com "Invalid redirect_uri".
-  const appUrl = canonicalAppUrl(config.app_url, req.nextUrl.origin);
-  if (appUrl !== config.app_url && !isEphemeralUrl(appUrl)) {
-    await updateConfig({ app_url: appUrl });
-  }
-  const redirectUri = `${appUrl}/api/oauth/callback`;
-  return NextResponse.redirect(authorizeUrl(config.instagram_app_id, redirectUri, oauthState()));
 }

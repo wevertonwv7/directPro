@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     let account = original;
 
     // Página do Facebook não entra na renovação: o token dela não expira.
-    if (!isFacebook(account) && account.token_expires_at) {
+    if (!isFacebook(account) && account.auth_provider !== "facebook_login" && account.token_expires_at) {
       const expires = new Date(account.token_expires_at).getTime();
       const ageDays = 60 - (expires - Date.now()) / 86_400_000; // token longo dura 60 dias
       if (ageDays >= 7) {

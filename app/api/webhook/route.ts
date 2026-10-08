@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 import {
-  handleCommentEvent,
-  handleFacebookFeedChange,
-  handleMessagingEvent,
   drainQueue,
   logEvent,
 } from "@/lib/engine";
 import { getConfig } from "@/lib/db";
+import { metaCredentials } from "@/lib/meta-config";
+import { signatureMatches, type WebhookBody } from "@/lib/webhook-events";
+import { saveWebhookEvents } from "@/lib/webhook-inbox";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -48,8 +48,8 @@ export async function GET(req: NextRequest) {
   let erroBanco: string | null = null;
   try {
     esperado = (await getConfig()).webhook_verify_token;
-  } catch (err) {
-    erroBanco = err instanceof Error ? err.message.slice(0, 200) : "erro no banco";
+  } catch {
+    erroBanco = "confira a configuração e disponibilidade do banco no servidor";
   }
   // Fallback: permite validar mesmo se o banco estiver indisponível no momento
   // exato do handshake (a Meta valida na hora em que o usuário clica em salvar).
@@ -92,118 +92,30 @@ export async function GET(req: NextRequest) {
   });
 }
 
-function assinaturaConfere(rawBody: string, header: string | null, secret: string): boolean {
-  if (!secret || !header?.startsWith("sha256=")) return false;
-  const expected = createHmac("sha256", secret).update(rawBody, "utf8").digest("hex");
-  const received = header.slice(7);
-  const a = Buffer.from(expected, "hex");
-  const b = Buffer.from(received, "hex");
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
-// ============================================================
-// POST — evento da Meta
-//
-// A assinatura é conferida contra TODAS as chaves conhecidas do install. Um
-// app de Instagram tem duas chaves fáceis de confundir (a do "Login do
-// Instagram" e a do app em Configurações → Básico), e a Meta assina com a do
-// app. Conferindo só contra uma, o install que salvou a outra rejeitaria 100%
-// dos eventos com 401 — silenciosamente, que é exatamente o sintoma de
-// "conecta e cria automação, mas nada acontece".
-// ============================================================
+// Confirma a assinatura antes de gravar. ACK só depois da persistência;
+// processamento e envio ficam no worker, recuperados por QStash/cron.
 export async function POST(req: NextRequest) {
-  // corpo CRU antes de qualquer parse — a assinatura é do corpo exato
   const rawBody = await req.text();
-  const assinatura = req.headers.get("x-hub-signature-256");
-
+  const signature = req.headers.get("x-hub-signature-256");
   let config;
-  try {
-    config = await getConfig();
-  } catch {
-    // 503 (e não 500): indisponibilidade temporária, a Meta reenvia o evento
-    return new NextResponse("banco indisponível", { status: 503 });
-  }
-
-  const chaves = [
-    config.instagram_app_secret,
-    config.meta_app_secret,
-    process.env.META_APP_SECRET ?? null,
-  ].filter((s): s is string => Boolean(s));
-
-  if (!chaves.length) {
-    await logEvent(null, "signature_skipped", {
-      motivo: "nenhuma chave secreta configurada — salve as credenciais no /setup",
-    });
-    return new NextResponse("sem chave secreta configurada", { status: 401 });
-  }
-
-  if (!chaves.some((s) => assinaturaConfere(rawBody, assinatura, s))) {
-    // NUNCA silencioso: sem este registro, o usuário vê "não chega nada" e não
-    // tem como descobrir que o problema é a chave secreta errada.
-    await logEvent(null, "signature_mismatch", {
-      motivo:
-        "a assinatura não confere com nenhuma chave salva — confira a Chave Secreta do app no /setup",
-      tem_header: Boolean(assinatura),
-      chaves_testadas: chaves.length,
-    });
+  try { config = await getConfig(); }
+  catch { return new NextResponse("banco indisponível", { status: 503 }); }
+  const secret = metaCredentials(config).appSecret;
+  const keys = [secret, config.instagram_app_secret].filter((key): key is string => Boolean(key));
+  if (!keys.some((key) => signatureMatches(rawBody, signature, key))) {
+    try { await logEvent(null, "signature_mismatch", { motivo: "Assinatura inválida; confira a chave do app principal.", tem_header: Boolean(signature) }); } catch {}
     return new NextResponse("invalid signature", { status: 401 });
   }
-
-  let body: {
-    object?: string;
-    entry?: {
-      id?: string;
-      changes?: { field?: string; value?: Record<string, unknown> }[];
-      messaging?: Record<string, unknown>[];
-    }[];
-  };
+  let body: WebhookBody;
   try {
     body = JSON.parse(rawBody);
-  } catch {
-    return new NextResponse("bad json", { status: 400 });
-  }
-
-  // O mesmo callback recebe as duas assinaturas do app: "instagram" e "page"
-  // (Facebook). body.object diz de qual plataforma é o evento — e é isso que
-  // evita procurar o id de uma página entre as contas do Instagram.
-  const facebook = body.object === "page";
-
-  try {
-    for (const entry of body.entry ?? []) {
-      // entry.id diz QUAL conta conectada recebeu o evento (multi-conta):
-      // o id do Instagram ou o id da página do Facebook.
-      for (const change of entry.changes ?? []) {
-        if (facebook && change.field === "feed" && change.value) {
-          await handleFacebookFeedChange(entry.id, change.value as never);
-        } else if (!facebook && change.field === "comments" && change.value) {
-          await handleCommentEvent(entry.id, change.value as never);
-        }
-      }
-      for (const messaging of entry.messaging ?? []) {
-        await handleMessagingEvent(
-          entry.id,
-          messaging as never,
-          facebook ? "facebook" : "instagram"
-        );
-      }
+    if (!body || typeof body !== "object" || !Array.isArray(body.entry)) throw new Error("invalid payload");
+    for (const entry of body.entry) {
+      if (!entry || typeof entry !== "object" || (entry.changes && !Array.isArray(entry.changes)) || (entry.messaging && !Array.isArray(entry.messaging))) throw new Error("invalid entry");
     }
-  } catch (err) {
-    // registra e responde 200 mesmo assim — a Meta reenvia com atraso se der erro
-    try {
-      await logEvent(null, "error", { message: String(err), body });
-    } catch {
-      // banco fora do ar: nada mais a fazer
-    }
-  }
-
-  // dispara a drenagem já, sem segurar a resposta (QStash e cron são o backup)
-  after(async () => {
-    try {
-      await drainQueue();
-    } catch {
-      // a trava atômica garante que o próximo dreno recupera
-    }
-  });
-
+  } catch { return new NextResponse("bad json", { status: 400 }); }
+  try { await saveWebhookEvents(body); }
+  catch { return new NextResponse("evento não persistido", { status: 503 }); }
+  after(async () => { try { await drainQueue(); } catch {} });
   return new NextResponse("ok", { status: 200 });
 }

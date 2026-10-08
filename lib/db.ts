@@ -1,6 +1,8 @@
 import "server-only";
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
+import { decryptSecret, encryptSecret } from "./secrets";
+import { metaCredentials } from "./meta-config";
 
 // Banco Postgres (Neon, provisionado pela Vercel). Acesso só no servidor —
 // a única credencial é a DATABASE_URL, que nunca chega ao navegador.
@@ -75,6 +77,9 @@ export type Platform = "instagram" | "facebook";
 export type Account = {
   ig_user_id: string;
   platform: Platform;
+  auth_provider: "instagram_login" | "facebook_login";
+  facebook_page_id: string | null;
+  facebook_page_name: string | null;
   username: string | null;
   name: string | null;
   profile_picture_url: string | null;
@@ -593,6 +598,22 @@ const MIGRACOES = [
 // migrações.
 const ESQUEMA = [
   ...DDL,
+  `alter table accounts add column if not exists auth_provider text not null default 'instagram_login'`,
+  `alter table accounts add column if not exists facebook_page_id text`,
+  `alter table accounts add column if not exists facebook_page_name text`,
+  `create table if not exists oauth_states (
+     state_hash text primary key, session_hash text not null,
+     redirect_uri text not null, expires_at timestamptz not null
+   )`,
+  `create table if not exists outbound_deliveries (
+     delivery_key text primary key, status text not null check (status in ('started','sent','rejected')),
+     updated_at timestamptz not null default now()
+   )`,
+  `create table if not exists webhook_receipts (
+     event_key text primary key, payload jsonb not null, status text not null default 'pending',
+     claimed_at timestamptz, attempts int not null default 0, error text,
+     created_at timestamptz not null default now()
+   )`,
   // migração p/ instalações antigas: colunas do app principal (Básico)
   `alter table config add column if not exists meta_app_id text`,
   `alter table config add column if not exists meta_app_secret text`,
@@ -605,6 +626,26 @@ const ESQUEMA = [
 const VERSAO_ESQUEMA = createHash("sha1").update(ESQUEMA.join(";")).digest("hex").slice(0, 16);
 
 let schemaReady: Promise<void> | null = null;
+
+async function encryptLegacyCredentials(): Promise<void> {
+  if (!process.env.CREDENTIALS_ENCRYPTION_KEY) return;
+  const s = sql();
+  const accounts = await s.query(`select ig_user_id, access_token from accounts where access_token not like 'enc:v1:%'`) as { ig_user_id: string; access_token: string }[];
+  const configs = await s.query(`select id, meta_app_secret, instagram_app_secret, access_token from config`) as Config[];
+  const writes = accounts.map((a) => s.query(
+    `update accounts set access_token = $2 where ig_user_id = $1 and access_token = $3`,
+    [a.ig_user_id, encryptSecret(a.access_token), a.access_token]
+  ));
+  for (const config of configs) {
+    for (const column of ["meta_app_secret", "instagram_app_secret", "access_token"] as const) {
+      const value = config[column];
+      if (value && !value.startsWith("enc:v1:")) {
+        writes.push(s.query(`update config set ${column} = $2 where id = $1 and ${column} = $3`, [config.id, encryptSecret(value), value]));
+      }
+    }
+  }
+  if (writes.length) await s.transaction(writes);
+}
 
 // ============================================================
 // Prepara o banco — no máximo uma vez por instância e, no caso comum, numa
@@ -633,7 +674,10 @@ export function ensureSchema(): Promise<void> {
         s.query(`select version from schema_state limit 1`),
       ])) as [unknown, { version: string }[]];
 
-      if (atual?.[0]?.version === VERSAO_ESQUEMA) return;
+      if (atual?.[0]?.version === VERSAO_ESQUEMA) {
+        await encryptLegacyCredentials();
+        return;
+      }
 
       await s.transaction([
         ...ESQUEMA.map((cmd) => s.query(cmd)),
@@ -647,6 +691,7 @@ export function ensureSchema(): Promise<void> {
         s.query(`delete from schema_state`),
         s.query(`insert into schema_state (version) values ($1)`, [VERSAO_ESQUEMA]),
       ]);
+      await encryptLegacyCredentials();
     })().catch((err) => {
       schemaReady = null; // deixa a próxima requisição tentar de novo
       throw err;
@@ -660,7 +705,12 @@ export function ensureSchema(): Promise<void> {
 export async function getConfig(): Promise<Config> {
   await ensureSchema();
   const rows = (await sql()`select * from config where id = 1`) as Config[];
-  return rows[0];
+  const config = rows[0];
+  return {
+    ...config,
+    instagram_app_secret: config.instagram_app_secret ? decryptSecret(config.instagram_app_secret) : null,
+    meta_app_secret: config.meta_app_secret ? decryptSecret(config.meta_app_secret) : null,
+  };
 }
 
 const CONFIG_COLUMNS = new Set([
@@ -686,19 +736,23 @@ export async function updateConfig(fields: Partial<Config>): Promise<void> {
   const sets = entries.map(([k], i) => `${k} = $${i + 1}`).join(", ");
   await sql().query(
     `update config set ${sets}, updated_at = now() where id = 1`,
-    entries.map(([, v]) => v)
+    entries.map(([k, v]) =>
+      (k === "meta_app_secret" || k === "instagram_app_secret" || k === "access_token") && typeof v === "string" && v
+        ? encryptSecret(v) : v)
   );
 }
 
 export function isMetaConfigured(c: Config): boolean {
-  return Boolean(c.instagram_app_id && c.instagram_app_secret);
+  const { appId, appSecret } = metaCredentials(c);
+  return Boolean(appId && appSecret);
 }
 
 // ---------- Contas ----------
 
 export async function listAccounts(): Promise<Account[]> {
   await ensureSchema();
-  return (await sql()`select * from accounts order by created_at asc`) as Account[];
+  return ((await sql()`select * from accounts order by created_at asc`) as Account[])
+    .map((a) => ({ ...a, access_token: decryptSecret(a.access_token) }));
 }
 
 export async function getAccount(igUserId: string): Promise<Account | undefined> {
@@ -706,12 +760,15 @@ export async function getAccount(igUserId: string): Promise<Account | undefined>
   const rows = (await sql().query(`select * from accounts where ig_user_id = $1`, [
     igUserId,
   ])) as Account[];
-  return rows[0];
+  return rows[0] ? { ...rows[0], access_token: decryptSecret(rows[0].access_token) } : undefined;
 }
 
 export async function upsertAccount(a: {
   ig_user_id: string;
   platform?: Platform;
+  auth_provider?: Account["auth_provider"];
+  facebook_page_id?: string | null;
+  facebook_page_name?: string | null;
   username: string | null;
   name: string | null;
   profile_picture_url: string | null;
@@ -721,23 +778,30 @@ export async function upsertAccount(a: {
   await ensureSchema();
   await sql().query(
     `insert into accounts (ig_user_id, platform, username, name, profile_picture_url,
-                           access_token, token_expires_at, connected_at)
-     values ($1, $7, $2, $3, $4, $5, $6, now())
+                           access_token, token_expires_at, connected_at, auth_provider, facebook_page_id, facebook_page_name)
+     values ($1, $7, $2, $3, $4, $5, $6, now(), $8, $9, $10)
      on conflict (ig_user_id) do update set
        platform = excluded.platform,
        username = excluded.username,
        name = excluded.name,
        profile_picture_url = excluded.profile_picture_url,
        access_token = excluded.access_token,
-       token_expires_at = excluded.token_expires_at`,
+       token_expires_at = excluded.token_expires_at,
+       connected_at = now(),
+       auth_provider = excluded.auth_provider,
+       facebook_page_id = excluded.facebook_page_id,
+       facebook_page_name = excluded.facebook_page_name`,
     [
       a.ig_user_id,
       a.username,
       a.name,
       a.profile_picture_url,
-      a.access_token,
+      encryptSecret(a.access_token),
       a.token_expires_at?.toISOString() ?? null,
       a.platform ?? "instagram",
+      a.auth_provider ?? "instagram_login",
+      a.facebook_page_id ?? null,
+      a.facebook_page_name ?? null,
     ]
   );
 }
@@ -759,7 +823,7 @@ export async function updateAccountToken(
 ): Promise<void> {
   await sql().query(
     `update accounts set access_token = $2, token_expires_at = $3 where ig_user_id = $1`,
-    [igUserId, accessToken, tokenExpiresAt.toISOString()]
+    [igUserId, encryptSecret(accessToken), tokenExpiresAt.toISOString()]
   );
 }
 
